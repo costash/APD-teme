@@ -85,7 +85,11 @@ int manhattan(const int i1, const int j1, const int i2, const int j2)
 	return abs(i2 - i1) + abs(j2 - j1);
 }
 
-
+// Returns max of two ints
+int max(const int a, const int b)
+{
+	return a < b ? b : a;
+}
 
 
 #endif
