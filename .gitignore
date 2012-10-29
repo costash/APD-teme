@@ -13,3 +13,7 @@
 
 # Zip files
 *.zip
+
+# Eclipse metadata and debug folders
+*.metadata/*
+*/Debug/*
