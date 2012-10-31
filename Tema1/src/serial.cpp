@@ -64,41 +64,57 @@ void printCostMin(const int n, Cell **& stats)
 }
 
 // Computes the matrix for next year
-void computeNextYear(const int n, Cell **& stats, Cell **& next_year)
+//void computeNextYear(const int n, Cell **& stats, Cell **& next_year)
+void computeNextYear(const int n, Cell **& stats)
 {
 	addMinCostToMatrix(n, stats);
 	printCostMin(n, stats);
 	for (int i = 0; i < n; ++i)
 		for (int j = 0; j < n; ++j)
 		{
-			next_year[i][j].resursa = stats[i][j].resursa;
+/*			next_year[i][j].resursa = stats[i][j].resursa;*/
 			if (stats[i][j].buget < stats[i][j].cost_compl)
 			{
-				next_year[i][j].buget = stats[i][j].cost_compl;
+				/*next_year[i][j].buget = stats[i][j].cost_compl;
 				next_year[i][j].pret_resursa = stats[i][j].pret_resursa +
 						stats[i][j].cost_compl - stats[i][j].buget;
+				*/
+				stats[i][j].pret_resursa += stats[i][j].cost_compl - stats[i][j].buget;
+				stats[i][j].buget = stats[i][j].cost_compl;
 			}
 			else if (stats[i][j].buget > stats[i][j].cost_compl)
 			{
-				next_year[i][j].buget = stats[i][j].cost_compl;
+				/*next_year[i][j].buget = stats[i][j].cost_compl;
 				next_year[i][j].pret_resursa = stats[i][j].pret_resursa +
-						(stats[i][j].cost_compl - stats[i][j].buget) / 2;
+						(stats[i][j].cost_compl - stats[i][j].buget) / 2;*/
+				stats[i][j].pret_resursa += (stats[i][j].cost_compl - stats[i][j].buget) / 2;
+				stats[i][j].buget = stats[i][j].cost_compl;
 			}
 			else
 			{
-				next_year[i][j].buget = stats[i][j].cost_compl;
-				next_year[i][j].pret_resursa = stats[i][j].cost_minim_resursa + 1;
+				stats[i][j].pret_resursa = stats[i][j].cost_minim_resursa + 1;
+				stats[i][j].buget = stats[i][j].cost_compl;
 			}
 
-			if (next_year[i][j].pret_resursa < pret_minim)
-				next_year[i][j].pret_resursa = pret_minim;
+			/*if (next_year[i][j].pret_resursa < pret_minim)
+				next_year[i][j].pret_resursa = pret_minim;*/
+			if (stats[i][j].pret_resursa < pret_minim)
+				stats[i][j].pret_resursa = pret_minim;
+			else if (stats[i][j].pret_resursa > pret_maxim)
+			{
+				// respecializare
+				stats[i][j].resursa = !stats[i][j].resursa;
+				stats[i][j].buget = pret_maxim;
+				stats[i][j].pret_resursa = (pret_minim + pret_maxim) / 2;
+			}
+			/*
 			else if (next_year[i][j].pret_resursa > pret_maxim)
 			{
 				// respecializare
 				next_year[i][j].resursa = !stats[i][j].resursa;
 				next_year[i][j].buget = pret_maxim;
 				next_year[i][j].pret_resursa = (pret_minim + pret_maxim) / 2;
-			}
+			}*/
 		}
 }
 
@@ -140,32 +156,41 @@ void printCosts(const int n, Cell **& stats)
 	}
 }
 
+// Write final costs.
+void writeCosts(const int n, Cell **& stats, ofstream &file_out)
+{
+	for (int i = 0; i < n; ++i)
+		{
+			for (int j = 0; j < n; ++j)
+				file_out << "(" << stats[i][j].resursa << ","
+					<< stats[i][j].pret_resursa << ","
+					<< stats[i][j].buget << ") ";
+			file_out << "\n";
+		}
+}
+
 // Computes requested data for all years
-void computeAllYears(const int n, Cell **& stats, Cell **& next_year, ofstream &file_out)
+void computeAllYears(const int n, Cell **& stats, ofstream &file_out)
 {
 	for (int k = 0; k < iteratii; ++k)
 	{
 		cout << "Pasul " << k << "\n";
-		computeNextYear(n, stats, next_year);
+		//computeNextYear(n, stats, next_year);
+		computeNextYear(n, stats);
 
-		writeOutput(file_out, n, next_year);
-
-
-
-		Cell **temp = stats;
-		stats = next_year;
-		next_year = temp;
+		writeOutput(file_out, n, stats);
 
 		cout << "\n";
 		printCosts(n, stats);
 	}
+	writeCosts(n, stats, file_out);
 }
 
 int main(int argc, char *argv[])
 {
 	int n;
 	Cell **stats;					// Matricea pentru anul curent
-	Cell **next_year;				// Matricea pentru anul urmator
+	//Cell **next_year;				// Matricea pentru anul urmator
 
     checkArgs(argc, argv, iteratii);
 
@@ -176,7 +201,7 @@ int main(int argc, char *argv[])
     cerr << "n: " << n << " pmin: " << pret_minim << " pmax: " << pret_maxim << endl;
 
     createMatrix(stats, n);
-    createMatrix(next_year, n);
+    //createMatrix(next_year, n);
 
     readInput(file_in, n, stats);
     file_in.close();
@@ -188,7 +213,8 @@ int main(int argc, char *argv[])
     cout << "Costurile initiale \n";
     printCosts(n, stats);
     cout << endl;
-    computeAllYears(n, stats, next_year, file_out);
+    //computeAllYears(n, stats, next_year, file_out);
+    computeAllYears(n, stats, file_out);
 
     return 0;
 }
