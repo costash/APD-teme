@@ -14,7 +14,7 @@ int getCostMinimResursaProprie(const bool resursa, Cell **& stats, const int n,
 		{
 			if (stats[i][j].resursa == resursa &&
 					manhattan(celli, cellj, i, j) + stats[i][j].pret_resursa < minim)
-				minim = stats[i][j].pret_resursa;
+				minim = stats[i][j].pret_resursa + manhattan(celli, cellj, i, j);
 		}
 	return minim;
 }
@@ -31,7 +31,7 @@ int getCostMinimResursaCompl(const bool resursa, Cell **& stats, const int n,
 				continue;
 			if (stats[i][j].resursa == resursa &&
 					manhattan(celli, cellj, i, j) + stats[i][j].pret_resursa < minim)
-				minim = stats[i][j].pret_resursa;
+				minim = stats[i][j].pret_resursa + manhattan(celli, cellj, i, j);
 		}
 	return minim;
 }
@@ -49,10 +49,25 @@ void addMinCostToMatrix(const int n, Cell **& stats)
 		}
 }
 
+void printCostMin(const int n, Cell **& stats)
+{
+	cout << "Costuri minime: \n";
+	for (int i = 0; i < n; ++i)
+	{
+		for (int j = 0; j < n; ++j)
+		{
+			cout << "(" << stats[i][j].cost_minim_resursa << ","
+					<< stats[i][j].cost_compl << ") ";
+		}
+		cout << endl;
+	}
+}
+
 // Computes the matrix for next year
 void computeNextYear(const int n, Cell **& stats, Cell **& next_year)
 {
 	addMinCostToMatrix(n, stats);
+	printCostMin(n, stats);
 	for (int i = 0; i < n; ++i)
 		for (int j = 0; j < n; ++j)
 		{
@@ -90,15 +105,59 @@ void computeNextYear(const int n, Cell **& stats, Cell **& next_year)
 // Writes
 void writeOutput(ofstream &file_out, const int n, Cell **& stats)
 {
+	int countResursaA = 0, countResursaB = 0;
+	int pretMaxA = 0, pretMaxB = 0;
 
+	for (int i = 0; i < n; ++i)
+		for (int j = 0; j < n; ++j)
+		{
+			if (!stats[i][j].resursa)
+			{
+				++countResursaA;
+				if (stats[i][j].pret_resursa > pretMaxA)
+					pretMaxA = stats[i][j].pret_resursa;
+			}
+			else
+			{
+				++countResursaB;
+				if (stats[i][j].pret_resursa > pretMaxB)
+					pretMaxB = stats[i][j].pret_resursa;
+			}
+		}
+	file_out << countResursaA << " " << pretMaxA << " ";
+	file_out << countResursaB << " " << pretMaxB << "\n";
+}
+
+void printCosts(const int n, Cell **& stats)
+{
+	for (int i = 0; i < n; ++i)
+	{
+		for (int j = 0; j < n; ++j)
+			cout << "(" << stats[i][j].resursa << ","
+				<< stats[i][j].pret_resursa << ","
+				<< stats[i][j].buget << ") ";
+		cout << "\n";
+	}
 }
 
 // Computes requested data for all years
-void computeAllYears(const int n, Cell **& stats, Cell **& next_year)
+void computeAllYears(const int n, Cell **& stats, Cell **& next_year, ofstream &file_out)
 {
 	for (int k = 0; k < iteratii; ++k)
 	{
+		cout << "Pasul " << k << "\n";
 		computeNextYear(n, stats, next_year);
+
+		writeOutput(file_out, n, next_year);
+
+
+
+		Cell **temp = stats;
+		stats = next_year;
+		next_year = temp;
+
+		cout << "\n";
+		printCosts(n, stats);
 	}
 }
 
@@ -126,6 +185,10 @@ int main(int argc, char *argv[])
     //addMinCostToMatrix(n, stats);
     //cerr << "max(4, 10) = " << max(4, 10);
     ofstream file_out(argv[3], ios::out);
+    cout << "Costurile initiale \n";
+    printCosts(n, stats);
+    cout << endl;
+    computeAllYears(n, stats, next_year, file_out);
 
     return 0;
 }
