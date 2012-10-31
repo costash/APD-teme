@@ -1,5 +1,6 @@
 #include "common.h"
 #include <climits>
+#include <omp.h>
 using namespace std;
 
 int pret_minim, pret_maxim, iteratii;
@@ -39,6 +40,7 @@ int getCostMinimResursaCompl(const bool resursa, Cell **& stats, const int n,
 // Computes and adds minimums to matrix
 void addMinCostToMatrix(const int n, Cell **& stats)
 {
+	#pragma omp parallel for
 	for (int i = 0; i < n; ++i)
 		for (int j = 0; j < n; ++j)
 		{

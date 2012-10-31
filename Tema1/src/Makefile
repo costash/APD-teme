@@ -1,13 +1,17 @@
 CC = g++
 SRC = $(wildcard *.cpp)
 OBJ = $(patsubst %.cpp, %.o, $(SRC))
-CC_FLAGS = -Wall -O2
-LD_FLAGS = 
-BIN = serial
+CC_FLAGS = -Wall -O2 -fopenmp
+LD_FLAGS = -Wall -O2 -fopenmp
+BIN_SERIAL = serial
+BIN_PARALEL = paralel
 
-all: $(BIN)
+all: $(BIN_SERIAL) $(BIN_PARALEL)
 
-$(BIN): $(OBJ)
+$(BIN_SERIAL): serial.o
+	$(CC) $(LD_FLAGS) -o $@ $^
+
+$(BIN_PARALEL): paralel.o
 	$(CC) $(LD_FLAGS) -o $@ $^
 
 %.o: %.cpp
