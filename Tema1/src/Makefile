@@ -21,3 +21,6 @@ $(BIN_PARALEL): paralel.o
 
 clean:
 	rm -f $(OBJ) $(BIN)
+	rm -f $(BIN_SERIAL)
+	rm -f $(BIN_PARALEL)
+

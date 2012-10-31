@@ -40,6 +40,7 @@ int getCostMinimResursaCompl(const bool resursa, Cell **& stats, const int n,
 // Computes and adds minimums to matrix
 void addMinCostToMatrix(const int n, Cell **& stats)
 {
+	// Paralelizez calculul minimelor, un thread calculeaza minimele unui singur colonist
 	#pragma omp parallel for
 	for (int i = 0; i < n; ++i)
 		for (int j = 0; j < n; ++j)
@@ -71,6 +72,7 @@ void computeNextYear(const int n, Cell **& stats)
 {
 	addMinCostToMatrix(n, stats);
 	//printCostMin(n, stats);
+	// Paralelizez modificarile ce se fac bugetului, etc pentru fiecare colonist in parte
 	#pragma omp parallel for
 	for (int i = 0; i < n; ++i)
 		for (int j = 0; j < n; ++j)
@@ -107,20 +109,35 @@ void writeOutput(ofstream &file_out, const int n, Cell **& stats)
 	int countResursaA = 0, countResursaB = 0;
 	int pretMaxA = 0, pretMaxB = 0;
 
+	#pragma omp parallel for reduction(+: countResursaA, countResursaB)// reduction(max: pretMaxA, pretMaxB)
 	for (int i = 0; i < n; ++i)
 		for (int j = 0; j < n; ++j)
 		{
 			if (!stats[i][j].resursa)
 			{
 				++countResursaA;
+				#pragma omp flush(pretMaxA)
 				if (stats[i][j].pret_resursa > pretMaxA)
-					pretMaxA = stats[i][j].pret_resursa;
+				{
+					#pragma omp critical
+					{
+						if (stats[i][j].pret_resursa > pretMaxA)
+							pretMaxA = stats[i][j].pret_resursa;
+					}
+				}
 			}
 			else
 			{
 				++countResursaB;
+				#pragma omp flush(pretMaxB)
 				if (stats[i][j].pret_resursa > pretMaxB)
-					pretMaxB = stats[i][j].pret_resursa;
+				{
+					#pragma omp critical
+					{
+						if (stats[i][j].pret_resursa > pretMaxB)
+							pretMaxB = stats[i][j].pret_resursa;
+					}
+				}
 			}
 		}
 	file_out << countResursaA << " " << pretMaxA << " ";
