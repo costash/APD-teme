@@ -80,7 +80,7 @@ void readInput(ifstream &file_in, const int n, Cell **& stats)
 }
 
 // Computes Manhattan distance between two points (i1, j1), (i2, j2)
-int manhattan(const int i1, const int j1, const int i2, const int j2)
+inline int manhattan(const int i1, const int j1, const int i2, const int j2)
 {
 	return abs(i2 - i1) + abs(j2 - j1);
 }
