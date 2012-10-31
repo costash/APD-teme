@@ -3,8 +3,11 @@
 ANI=$1
 FISIN=$2
 FISOUT=$3
+NUM_THREADS=$4
 
 export OMP_SCHEDULE="dynamic"
-export OMP_NUM_THREADS=1
+if [ $# -eq 4 ]; then
+    export OMP_NUM_THREADS=$4
+fi
 
 time ./paralel $ANI $FISIN $FISOUT
