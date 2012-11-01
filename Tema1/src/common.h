@@ -9,7 +9,7 @@ using namespace std;
 #include <vector>
 
 // Checks for arguments format
-bool checkArgs(int argc, char *argv[], int &iteratii)
+inline bool checkArgs(int argc, char *argv[], int &iteratii)
 {
 	if (argc != 4)
 	{
@@ -43,7 +43,7 @@ struct Cell
 };
 
 // Citeste dimensiunile
-void readInputSize(ifstream &file_in, int &n, int &pmin, int &pmax)
+inline void readInputSize(ifstream &file_in, int &n, int &pmin, int &pmax)
 {
 	//ifstream file_in(filename, ios::in);
 	if(file_in.good())
@@ -53,7 +53,7 @@ void readInputSize(ifstream &file_in, int &n, int &pmin, int &pmax)
 }
 
 // Aloca memorie pentru n x n colonisti
-void createMatrix(Cell **& stats, const int n)
+inline void createMatrix(Cell **& stats, const int n)
 {
     stats = new Cell*[n];
     for(int i = 0;i < n;++i)
@@ -70,12 +70,12 @@ void readInput(ifstream &file_in, const int n, Cell **& stats)
 				file_in >> stats[i][j].resursa;
 
 		for (int i = 0; i < n; ++i)
-					for (int j = 0; j < n; ++j)
-						file_in >> stats[i][j].pret_resursa;
+			for (int j = 0; j < n; ++j)
+				file_in >> stats[i][j].pret_resursa;
 
 		for (int i = 0; i < n; ++i)
-					for (int j = 0; j < n; ++j)
-						file_in >> stats[i][j].buget;
+			for (int j = 0; j < n; ++j)
+				file_in >> stats[i][j].buget;
 	}
 }
 

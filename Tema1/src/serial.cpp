@@ -8,21 +8,17 @@ int pret_minim, pret_maxim, iteratii;
 void calcCostMinim(const bool resursa, Cell **& stats, const int n, const int celli, const int cellj,
 		int &min_compl, int &min_resursa)
 {
-	int minim_compl = INT_MAX;
-	int minim_resursa = INT_MAX;
+	int min[2] = {INT_MAX, INT_MAX};
 	for (int i = 0; i < n; ++i)
 		for (int j = 0; j < n; ++j)
 		{
-			if (stats[i][j].resursa == !resursa && i == celli && j == cellj)
-				continue;
+			bool res = stats[i][j].resursa;
 			int calculus = manhattan(celli, cellj, i, j) + stats[i][j].pret_resursa;
-			if (stats[i][j].resursa == resursa && calculus < minim_resursa)
-				minim_resursa = calculus;
-			else if (stats[i][j].resursa == !resursa && calculus < minim_compl)
-				minim_compl = calculus;
+			if (calculus < min[res])
+				min[res] = calculus;
 		}
-	min_compl = minim_compl;
-	min_resursa = minim_resursa;
+	min_compl = min[!resursa];
+	min_resursa = min[resursa];
 }
 
 // Computes and adds minimums to matrix
