@@ -16,30 +16,69 @@ void printCosts(const int n, Cell **& stats)
 	}
 }
 
-void computeMin(const int n, Cell **& stats, Cell **& aux)
+void printDebug(const int n, Cell **& mat)
 {
 	for (int i = 0; i < n; ++i)
 	{
-		//minime pe linii la stanga
-		int minimLeftA = INT_MAX;
-		int minimLeftB = INT_MAX;
-		for (int j = 1; j < n; ++j)
-		{
-			bool res = stats[i][j].resursa;
-			if (res == false)	// resursa A
-			{
-
-			}
-		}
+		for (int j = 0; j < n; ++j)
+			cout << "(" << mat[i][j].resursa << ","
+				<< mat[i][j].cost_minim_resursa << ","
+				<< mat[i][j].cost_compl << ","
+				<< mat[i][j].pret_resursa << ","
+				<< mat[i][j].buget << ") ";
+		cout << "\n";
 	}
 }
 
-// Copy from a to b
+/**
+ * Copy from a to b
+ */
 void copyMatrix(const int n, Cell **a, Cell **b)
 {
 	for (int i = 0; i < n; ++i)
 		for (int j = 0; j < n; ++j)
 			b[i][j] = a[i][j];
+}
+
+
+void computeMin(const int n, Cell **& stats, Cell **& aux)
+{
+	copyMatrix(n, stats, aux);
+	cout << "Before\n";
+	printDebug(n, stats);
+	for (int i = 0; i < n; ++i)
+	{
+
+		int min[2] = {INT_MAX - 2 * n, INT_MAX - 2 * n};
+		stats[i][0].cost_minim_resursa = INT_MAX - 2 * n;
+		stats[i][0].cost_compl = INT_MAX - 2 * n;
+
+		//minime pe linii la stanga
+		for (int j = 1; j < n; ++j)
+		{
+			bool res = stats[i][j - 1].resursa;
+			int pret = stats[i][j - 1].pret_resursa;
+			if (min[res] > pret)
+				min[res] = pret + 1;
+			else
+			{
+				++min[res];
+			}
+			++min[!res];
+			if (res == false)
+			{
+				stats[i][j].cost_minim_resursa = min[res];
+				stats[i][j].cost_compl = min[!res];
+			}
+			else
+			{
+				stats[i][j].cost_minim_resursa = min[!res];
+				stats[i][j].cost_compl = min[res];
+			}
+		}
+	}
+	cout << "After\n";
+	printDebug(n, stats);
 }
 
 int main(int argc, char *argv[])
@@ -67,11 +106,12 @@ int main(int argc, char *argv[])
     /*cout << "Costurile initiale \n";
     printCosts(n, stats);
     cout << endl;*/
-    copyMatrix(n, stats, aux);
+    //copyMatrix(n, stats, aux);
     /*cout << "Auxiliar \n";
     printCosts(n, aux);*/
 
     //computeAllYears(n, stats, file_out);
+    computeMin(n, stats, aux);
 
 
     file_out.close();
