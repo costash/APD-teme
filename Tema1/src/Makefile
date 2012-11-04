@@ -5,8 +5,8 @@ CC_FLAGS = -Wall -O2 -fopenmp
 LD_FLAGS = -Wall -O2 -fopenmp
 BIN_SERIAL = serial
 BIN_PARALEL = paralel
-BIN_SERIALO = serialo
-BIN_PARALELO = paralelo
+BIN_SERIALO = optims
+BIN_PARALELO = optimp
 
 all: $(BIN_SERIAL) $(BIN_PARALEL) $(BIN_SERIALO) $(BIN_PARALELO)
 
@@ -29,6 +29,5 @@ $(BIN_PARALELO): paraleloptimized.o
 
 clean:
 	rm -f $(OBJ) $(BIN)
-	rm -f $(BIN_SERIAL)
-	rm -f $(BIN_PARALEL)
+	rm -f $(BIN_SERIAL) $(BIN_PARALEL) $(BIN_SERIALO) $(BIN_PARALELO)
 

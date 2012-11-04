@@ -4,6 +4,7 @@ using namespace std;
 
 int pret_minim, pret_maxim, iteratii;
 
+// Functie de debug
 void printCosts(const int n, Cell **& stats)
 {
 	for (int i = 0; i < n; ++i)
@@ -16,6 +17,7 @@ void printCosts(const int n, Cell **& stats)
 	}
 }
 
+// Functie de debugging
 void printDebug(const int n, Cell **& mat)
 {
 	for (int i = 0; i < n; ++i)

@@ -6,9 +6,10 @@ using namespace std;
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
-#include <vector>
 
-// Checks for arguments format
+//#define DEBUG
+
+// Checks for arguments format and save them
 inline bool checkArgs(int argc, char *argv[], int &iteratii)
 {
 	if (argc != 4)
@@ -42,17 +43,16 @@ struct Cell
 	int buget;				// bugetul pe anul curent
 };
 
-// Citeste dimensiunile
+// Citeste dimensiunile din fisierul de intrare
 inline void readInputSize(ifstream &file_in, int &n, int &pmin, int &pmax)
 {
-	//ifstream file_in(filename, ios::in);
 	if(file_in.good())
 	{
 		file_in >> pmin >> pmax >> n;
 	}
 }
 
-// Aloca memorie pentru n x n colonisti
+// Aloca memorie pentru o matrice de n x n colonisti (Cell)
 inline void createMatrix(Cell **& stats, const int n)
 {
     stats = new Cell*[n];

@@ -9,6 +9,7 @@ void calcCostMinim(const bool resursa, Cell **& stats, const int n, const int ce
 		int &min_compl, int &min_resursa)
 {
 	int min[2] = {INT_MAX, INT_MAX};
+	// Pentru colonistul de la (celli, cellj) se parcurge matricea si se calculeaza minimele sale
 	for (int i = 0; i < n; ++i)
 		for (int j = 0; j < n; ++j)
 		{
@@ -24,6 +25,7 @@ void calcCostMinim(const bool resursa, Cell **& stats, const int n, const int ce
 // Computes and adds minimums to matrix
 void addMinCostToMatrix(const int n, Cell **& stats)
 {
+	// Calculeaza minimele pentru fiecare colonist si le adaug la matrice
 	for (int i = 0; i < n; ++i)
 		for (int j = 0; j < n; ++j)
 		{
@@ -32,6 +34,7 @@ void addMinCostToMatrix(const int n, Cell **& stats)
 		}
 }
 
+// Functie de debugging
 void printCostMin(const int n, Cell **& stats)
 {
 	cout << "Costuri minime: \n";
@@ -47,11 +50,14 @@ void printCostMin(const int n, Cell **& stats)
 }
 
 // Computes the matrix for next year
-//void computeNextYear(const int n, Cell **& stats, Cell **& next_year)
 void computeNextYear(const int n, Cell **& stats)
 {
+	// Calculez minimele pentru fiecare colonist
 	addMinCostToMatrix(n, stats);
-	//printCostMin(n, stats);
+	#ifdef DEBUG
+	printCostMin(n, stats);
+	#endif
+	// Updatez informatiile referitoare la buget, tip resursa si pret
 	for (int i = 0; i < n; ++i)
 		for (int j = 0; j < n; ++j)
 		{
@@ -69,11 +75,12 @@ void computeNextYear(const int n, Cell **& stats)
 			}
 			stats[i][j].buget = stats[i][j].cost_compl;
 
+			// Corectez pretul in caz ca se depasesc limitele legale
 			if (stats[i][j].pret_resursa < pret_minim)
 				stats[i][j].pret_resursa = pret_minim;
 			else if (stats[i][j].pret_resursa > pret_maxim)
 			{
-				// respecializare
+				// respecializare pe resursa complementara
 				stats[i][j].resursa = !stats[i][j].resursa;
 				stats[i][j].buget = pret_maxim;
 				stats[i][j].pret_resursa = (pret_minim + pret_maxim) / 2;
@@ -81,7 +88,8 @@ void computeNextYear(const int n, Cell **& stats)
 		}
 }
 
-// Writes
+// Calculeaza si apoi scrie in fisier informatiile agregate despre colonisti
+// la sfarsitul unui an
 void writeOutput(ofstream &file_out, const int n, Cell **& stats)
 {
 	int countResursaA = 0, countResursaB = 0;
@@ -107,6 +115,7 @@ void writeOutput(ofstream &file_out, const int n, Cell **& stats)
 	file_out << countResursaB << " " << pretMaxB << "\n";
 }
 
+// Functie pentru debugging
 void printCosts(const int n, Cell **& stats)
 {
 	for (int i = 0; i < n; ++i)
@@ -119,33 +128,40 @@ void printCosts(const int n, Cell **& stats)
 	}
 }
 
-// Write final costs.
+// Write final costs to file
 void writeCosts(const int n, Cell **& stats, ofstream &file_out)
 {
 	for (int i = 0; i < n; ++i)
-		{
-			for (int j = 0; j < n; ++j)
-				file_out << "(" << stats[i][j].resursa << ","
-					<< stats[i][j].pret_resursa << ","
-					<< stats[i][j].buget << ") ";
-			file_out << "\n";
-		}
+	{
+		for (int j = 0; j < n; ++j)
+			file_out << "(" << stats[i][j].resursa << ","
+				<< stats[i][j].pret_resursa << ","
+				<< stats[i][j].buget << ") ";
+		file_out << "\n";
+	}
 }
 
 // Computes requested data for all years
 void computeAllYears(const int n, Cell **& stats, ofstream &file_out)
 {
+	// This is the main loop, for each year
 	for (int k = 0; k < iteratii; ++k)
 	{
-		//cout << "Pasul " << k << "\n";
-		//computeNextYear(n, stats, next_year);
-		computeNextYear(n, stats);
+		#ifdef DEBUG
+		cout << "Pasul " << k << "\n";
+		#endif
 
+		// Compute values for next year and write output to file
+		computeNextYear(n, stats);
 		writeOutput(file_out, n, stats);
 
-		//cout << "\n";
-		//printCosts(n, stats);
+		#ifdef DEBUG
+		cout << "\n";
+		printCosts(n, stats);
+		#endif
 	}
+
+	// Write final data to file
 	writeCosts(n, stats, file_out);
 }
 
@@ -159,8 +175,10 @@ int main(int argc, char *argv[])
     ifstream file_in(argv[2], ios::in);
     readInputSize(file_in, n, pret_minim, pret_maxim);
 
-    //cerr << "Nr iteratii: " << iteratii << "\n";
-    //cerr << "n: " << n << " pmin: " << pret_minim << " pmax: " << pret_maxim << endl;
+	#ifdef DEBUG
+    cerr << "Nr iteratii: " << iteratii << "\n";
+    cerr << "n: " << n << " pmin: " << pret_minim << " pmax: " << pret_maxim << endl;
+	#endif
 
     createMatrix(stats, n);
 
@@ -169,9 +187,13 @@ int main(int argc, char *argv[])
 
     ofstream file_out(argv[3], ios::out);
 
-    //cout << "Costurile initiale \n";
-    //printCosts(n, stats);
-    //cout << endl;
+	#ifdef DEBUG
+    cout << "Costurile initiale \n";
+    printCosts(n, stats);
+    cout << endl;
+	#endif
+
+    // This contains the main loop
     computeAllYears(n, stats, file_out);
 
     file_out.close();
