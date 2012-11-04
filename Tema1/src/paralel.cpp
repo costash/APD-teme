@@ -57,9 +57,9 @@ void printCostMin(const int n, Cell **& stats)
 }
 
 // Computes the matrix for next year
-//void computeNextYear(const int n, Cell **& stats, Cell **& next_year)
 void computeNextYear(const int n, Cell **& stats)
 {
+	// Calculez minimele pentru fiecare colonist
 	addMinCostToMatrix(n, stats);
 	#ifdef DEBUG
 	printCostMin(n, stats);
@@ -165,13 +165,13 @@ void printCosts(const int n, Cell **& stats)
 void writeCosts(const int n, Cell **& stats, ofstream &file_out)
 {
 	for (int i = 0; i < n; ++i)
-		{
-			for (int j = 0; j < n; ++j)
-				file_out << "(" << stats[i][j].resursa << ","
-					<< stats[i][j].pret_resursa << ","
-					<< stats[i][j].buget << ") ";
-			file_out << "\n";
-		}
+	{
+		for (int j = 0; j < n; ++j)
+			file_out << "(" << stats[i][j].resursa << ","
+				<< stats[i][j].pret_resursa << ","
+				<< stats[i][j].buget << ") ";
+		file_out << "\n";
+	}
 }
 
 // Computes requested data for all years

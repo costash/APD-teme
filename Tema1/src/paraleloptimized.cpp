@@ -5,6 +5,7 @@ using namespace std;
 
 int pret_minim, pret_maxim, iteratii;
 
+// Functie de debug
 void printCosts(const int n, Cell **& stats)
 {
 	for (int i = 0; i < n; ++i)
@@ -17,6 +18,7 @@ void printCosts(const int n, Cell **& stats)
 	}
 }
 
+// Functie de debugging
 void printDebug(const int n, Cell **& mat)
 {
 	for (int i = 0; i < n; ++i)
@@ -31,6 +33,7 @@ void printDebug(const int n, Cell **& mat)
 	}
 }
 
+// Functie de debugging
 void printCostMin(const int n, Cell **& stats)
 {
 	cout << "Costuri minime: \n";
@@ -45,19 +48,26 @@ void printCostMin(const int n, Cell **& stats)
 	}
 }
 
-// Writes
+// Calculeaza si apoi scrie in fisier informatiile agregate despre colonisti
+// la sfarsitul unui an
 void writeOutput(ofstream &file_out, const int n, Cell **& stats)
 {
 	int countResursaA = 0, countResursaB = 0;
 	int pretMaxA = 0, pretMaxB = 0;
 
-	#pragma omp parallel for reduction(+: countResursaA, countResursaB)// reduction(max: pretMaxA, pretMaxB)
+	// Paralelizez aceasta operatie, si am nevoie de reduction pentru cele 4 valori agregate,
+	// dar fiindca pentru min/max nu exista reduction in implementarea OpenMP cu C++, am
+	// rescris reduction-ul folosindu-ma de #pragma omp flush, care actualizeaza valoarea unui
+	// intreg pentru toate thread-urile, si apoi se intra in zona critica doar daca acea conditie
+	// de maxim este indeplinita
+	#pragma omp parallel for reduction(+: countResursaA, countResursaB)
 	for (int i = 0; i < n; ++i)
 		for (int j = 0; j < n; ++j)
 		{
 			if (!stats[i][j].resursa)
 			{
 				++countResursaA;
+				// Reduction pentru maximul resursei de tip A
 				#pragma omp flush(pretMaxA)
 				if (stats[i][j].pret_resursa > pretMaxA)
 				{
@@ -71,6 +81,7 @@ void writeOutput(ofstream &file_out, const int n, Cell **& stats)
 			else
 			{
 				++countResursaB;
+				// Reduction pentru maximul resursei de tip B
 				#pragma omp flush(pretMaxB)
 				if (stats[i][j].pret_resursa > pretMaxB)
 				{
@@ -86,33 +97,33 @@ void writeOutput(ofstream &file_out, const int n, Cell **& stats)
 	file_out << countResursaB << " " << pretMaxB << "\n";
 }
 
-// Write final costs.
+// Write final costs to file. There is nothing to paralelize here, because writing to files is serial
 void writeCosts(const int n, Cell **& stats, ofstream &file_out)
 {
 	for (int i = 0; i < n; ++i)
-		{
-			for (int j = 0; j < n; ++j)
-				file_out << "(" << stats[i][j].resursa << ","
-					<< stats[i][j].pret_resursa << ","
-					<< stats[i][j].buget << ") ";
-			file_out << "\n";
-		}
+	{
+		for (int j = 0; j < n; ++j)
+			file_out << "(" << stats[i][j].resursa << ","
+				<< stats[i][j].pret_resursa << ","
+				<< stats[i][j].buget << ") ";
+		file_out << "\n";
+	}
 }
 
+// Calculeaza minimul a 2 intregi
 inline int getMin2(const int a, const int b)
 {
 	return a > b ? b : a;
 }
 
+// Calculeaza minimul a 3 intregi
 inline int getMin3(const int a, const int b, const int c)
 {
 	int aux = getMin2(a, b);
 	return getMin2(aux, c);
 }
 
-/**
- * Copy from a to b
- */
+// Copy all elements from matrix a to matrix b
 void copyMatrix(const int n, Cell **a, Cell **b)
 {
 	#pragma omp parallel for
@@ -124,8 +135,10 @@ void copyMatrix(const int n, Cell **a, Cell **b)
 
 void computeMin(const int n, Cell **& stats, Cell **& aux)
 {
-	/*cout << "Before lines_left->right\n";
-	printDebug(n, stats);*/
+	#ifdef DEBUG
+	cout << "Before lines_left->right\n";
+	printDebug(n, stats);
+	#endif
 	// Calculez minimele pe linii
 	#pragma omp parallel for
 	for (int i = 0; i < n; ++i)
@@ -135,9 +148,11 @@ void computeMin(const int n, Cell **& stats, Cell **& aux)
 		stats[i][0].cost_minim_resursa = INT_MAX - 2 * n;
 		stats[i][0].cost_compl = INT_MAX - 2 * n;
 
-		//minime pe linii de la stanga la dreapta
+		// Minime pe linii de la stanga la dreapta
 		for (int j = 1; j < n; ++j)
 		{
+			// pentru fiecare colonist, ma uit daca minimul calculat global este
+			// mai mic decat pretul resursei produse de vecinul din stanga + 1
 			bool res = stats[i][j - 1].resursa;
 			int pret = stats[i][j - 1].pret_resursa;
 			if (min[res] > pret)
@@ -145,7 +160,10 @@ void computeMin(const int n, Cell **& stats, Cell **& aux)
 			else
 				++min[res];
 
+			// Minimul pentru resursa opusa creste cu 1 (distanta de la vecin la mine)
 			++min[!res];
+
+			// Updatez minimele conform minimului calculat
 			if (res == false)		// resursa de tip A
 			{
 				stats[i][j].cost_minim_resursa = min[res];
@@ -158,11 +176,12 @@ void computeMin(const int n, Cell **& stats, Cell **& aux)
 			}
 		}
 
+		// Minime pe linii de la dreapta la stanga
 		min[0] = stats[i][n - 1].cost_minim_resursa;
 		min[1] = stats[i][n - 1].cost_compl;
-		//minime pe linii de la dreapta la stanga
 		for (int j = n - 2; j >= 0; --j)
 		{
+			// Ma uit la vecinul din dreapta mereu
 			bool res = stats[i][j + 1].resursa;
 			int pret = stats[i][j + 1].pret_resursa;
 			if (min[res] > pret)
@@ -173,6 +192,7 @@ void computeMin(const int n, Cell **& stats, Cell **& aux)
 			++min[!res];
 			if (res == false)		// resursa de tip A
 			{
+				// Trebuiesc considerate si minimele anterioare, repsectiv updatate
 				if (stats[i][j].cost_minim_resursa > min[res])
 					stats[i][j].cost_minim_resursa = min[res];
 				else
@@ -184,6 +204,7 @@ void computeMin(const int n, Cell **& stats, Cell **& aux)
 			}
 			else					// resursa de tip B
 			{
+				// Trebuiesc considerate si minimele anterioare, repsectiv updatate
 				if (stats[i][j].cost_compl > min[res])
 					stats[i][j].cost_compl = min[res];
 				else
@@ -199,8 +220,10 @@ void computeMin(const int n, Cell **& stats, Cell **& aux)
 	// Salvez matricea obtinuta pentru a compara din nou cu ea la final
 	copyMatrix(n, stats, aux);
 
-	/*cout << "After lines left->Right + right->left\n";
-	printDebug(n, stats);*/
+	#ifdef DEBUG
+	cout << "After lines left->Right + right->left\n";
+	printDebug(n, stats);
+	#endif
 
 	// Calculez minimele pe coloane, pe matricea obtinuta
 	#pragma omp parallel for
@@ -212,6 +235,7 @@ void computeMin(const int n, Cell **& stats, Cell **& aux)
 		// Calculez minimele de sus in jos
 		for (int i = 1; i < n; ++i)
 		{
+			// Ma uit mereu la vecinul de deasupra
 			bool res = stats[i - 1][j].resursa;
 			int pret = stats[i - 1][j].pret_resursa;
 			if (min[res] > pret)
@@ -249,6 +273,7 @@ void computeMin(const int n, Cell **& stats, Cell **& aux)
 		min[1] = stats[n - 1][j].cost_compl;
 		for (int i = n - 2; i >= 0; --i)
 		{
+			// Ma uit mereu la vecinul de dedesubt
 			bool res = stats[i + 1][j].resursa;
 			int pret = stats[i + 1][j].pret_resursa;
 			if (min[res] > pret)
@@ -283,15 +308,21 @@ void computeMin(const int n, Cell **& stats, Cell **& aux)
 
 	}
 
-	/*cout << "After columns up->down + down->up\n";
-	printDebug(n, stats);*/
+	#ifdef DEBUG
+	cout << "After columns up->down + down->up\n";
+	printDebug(n, stats);
+	#endif
 
 	// Compar ce am obtinut cu minimele pe linii
+	// Aceasta operatie poate fi de asemeni paralelizata, datele fiind independente intre threaduri
 	#pragma omp parallel for
 	for (int i = 0; i < n; ++i)
 		for (int j = 0; j < n; ++j)
 		{
 			bool res = stats[i][j].resursa;
+			// Trebuie sa consider si resursa pe care o produc eu, deci fac minim intre
+			// costul minim pentru resursa curenta calculat pe linii, respectiv linii + coloane
+			// si pretul resursei produse de mine
 			if (res == 0)
 			{
 				stats[i][j].cost_minim_resursa = getMin3(stats[i][j].cost_minim_resursa,
@@ -306,28 +337,35 @@ void computeMin(const int n, Cell **& stats, Cell **& aux)
 				stats[i][j].cost_compl = getMin3(stats[i][j].cost_compl,
 						aux[i][j].cost_compl, stats[i][j].pret_resursa);
 			}
-			/*stats[i][j].cost_minim_resursa = getMin3(stats[i][j].cost_minim_resursa,
-					aux[i][j].cost_minim_resursa, stats[i][j].pret_resursa);
-			stats[i][j].cost_compl = getMin3(stats[i][j].cost_compl,
-					aux[i][j].cost_compl, stats[i][j].pret_resursa);*/
 		}
 
-	/*cout << "Final min\n";
-	printDebug(n, stats);*/
+	#ifdef DEBUG
+	cout << "Final min\n";
+	printDebug(n, stats);
+	#endif
 
 }
 
+// Computes the matrix for next year
 void computeNextYear(const int n, Cell **stats, Cell **aux)
 {
+	// Calculez minimele pentru fiecare colonist
 	computeMin(n, stats, aux);
-	//printCostMin(n, stats);
+	#ifdef DEBUG
+	printCostMin(n, stats);
+	#endif
+
+	// Updatez informatiile referitoare la buget, tip resursa si pret
+	// Paralelizez operatiile ce se fac pentru fiecare colonist in parte, fiind independente intre ele
+	// De asemeni, variabilele declarate in interior sunt implicit private, fiecare thread
+	// utilizand resurse independente de celelalte threaduri
 	#pragma omp parallel for
 	for (int i = 0; i < n; ++i)
 		for (int j = 0; j < n; ++j)
 		{
 			int cost_compl, cost_min_res;
 			bool res = stats[i][j].resursa;
-			// Get minimum
+			// Get minimum for this element's resource type
 			if (res == 0)
 			{
 				cost_compl = stats[i][j].cost_compl;
@@ -339,7 +377,7 @@ void computeNextYear(const int n, Cell **stats, Cell **aux)
 				cost_min_res = stats[i][j].cost_compl;
 			}
 
-			// Actualizare
+			// Actualizare informatii
 			if (stats[i][j].buget < cost_compl)
 			{
 				stats[i][j].pret_resursa += cost_compl - stats[i][j].buget;
@@ -354,11 +392,12 @@ void computeNextYear(const int n, Cell **stats, Cell **aux)
 			}
 			stats[i][j].buget = cost_compl;
 
+			// Corectez pretul in caz ca se depasesc limitele legale
 			if (stats[i][j].pret_resursa < pret_minim)
 				stats[i][j].pret_resursa = pret_minim;
 			else if (stats[i][j].pret_resursa > pret_maxim)
 			{
-				// respecializare
+				// Respecializare pe resursa complementara
 				stats[i][j].resursa = !stats[i][j].resursa;
 				stats[i][j].buget = pret_maxim;
 				stats[i][j].pret_resursa = (pret_minim + pret_maxim) / 2;
@@ -371,17 +410,23 @@ void computeAllYears(const int n, Cell **stats, Cell **aux, ofstream &file_out)
 {
 	for (int k = 0; k < iteratii; ++k)
 	{
-		/*cout << "Pasul " << k << "\n";*/
-		computeNextYear(n, stats, aux);
+		#ifdef DEBUG
+		cout << "Pasul " << k << "\n";
+		#endif
 
+		// Compute values for next year and write output to file
+		computeNextYear(n, stats, aux);
 		writeOutput(file_out, n, stats);
 
-		/*cout << "\n";
-		printCosts(n, stats);*/
+		#ifdef DEBUG
+		cout << "\n";
+		printCosts(n, stats);
+		#endif
 	}
+
+	// Write final data to file
 	writeCosts(n, stats, file_out);
 }
-
 
 int main(int argc, char *argv[])
 {
@@ -394,8 +439,10 @@ int main(int argc, char *argv[])
     ifstream file_in(argv[2], ios::in);
     readInputSize(file_in, n, pret_minim, pret_maxim);
 
-    //cerr << "Nr iteratii: " << iteratii << "\n";
-    //cerr << "n: " << n << " pmin: " << pret_minim << " pmax: " << pret_maxim << endl;
+	#ifdef DEBUG
+    cerr << "Nr iteratii: " << iteratii << "\n";
+    cerr << "n: " << n << " pmin: " << pret_minim << " pmax: " << pret_maxim << endl;
+	#endif
 
     createMatrix(stats, n);
     createMatrix(aux, n);
@@ -405,16 +452,16 @@ int main(int argc, char *argv[])
 
     ofstream file_out(argv[3], ios::out);
 
-    /*cout << "Costurile initiale \n";
+	#ifdef DEBUG
+    cout << "Costurile initiale \n";
     printCosts(n, stats);
-    cout << endl;*/
-    //copyMatrix(n, stats, aux);
-    /*cout << "Auxiliar \n";
-    printCosts(n, aux);*/
+    cout << endl;
 
-    //computeAllYears(n, stats, file_out);
-    //computeMin(n, stats, aux);
-    //computeNextYear(n, stats, aux);
+    cout << "Auxiliar \n";
+    printCosts(n, aux);
+	#endif
+
+    // This contains the main loop
     computeAllYears(n, stats, aux, file_out);
 
     file_out.close();
