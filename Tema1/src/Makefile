@@ -5,13 +5,18 @@ CC_FLAGS = -Wall -O2 -fopenmp
 LD_FLAGS = -Wall -O2 -fopenmp
 BIN_SERIAL = serial
 BIN_PARALEL = paralel
+BIN_SERIALO = serialo
+BIN_PARALELO = paralelo
 
-all: $(BIN_SERIAL) $(BIN_PARALEL)
+all: $(BIN_SERIAL) $(BIN_PARALEL) $(BIN_SERIALO)
 
 $(BIN_SERIAL): serial.o
 	$(CC) $(LD_FLAGS) -o $@ $^
 
 $(BIN_PARALEL): paralel.o
+	$(CC) $(LD_FLAGS) -o $@ $^
+
+$(BIN_SERIALO): serialoptimized.o
 	$(CC) $(LD_FLAGS) -o $@ $^
 
 %.o: %.cpp
