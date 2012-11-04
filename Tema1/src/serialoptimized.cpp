@@ -44,7 +44,7 @@ void copyMatrix(const int n, Cell **a, Cell **b)
 void computeMin(const int n, Cell **& stats, Cell **& aux)
 {
 	copyMatrix(n, stats, aux);
-	cout << "Before\n";
+	cout << "Before lines_left->right\n";
 	printDebug(n, stats);
 	for (int i = 0; i < n; ++i)
 	{
@@ -53,31 +53,67 @@ void computeMin(const int n, Cell **& stats, Cell **& aux)
 		stats[i][0].cost_minim_resursa = INT_MAX - 2 * n;
 		stats[i][0].cost_compl = INT_MAX - 2 * n;
 
-		//minime pe linii la stanga
+		//minime pe linii de la stanga la dreapta
 		for (int j = 1; j < n; ++j)
 		{
 			bool res = stats[i][j - 1].resursa;
 			int pret = stats[i][j - 1].pret_resursa;
-			if (min[res] > pret)
+			if (min[res] > pret + 1)
 				min[res] = pret + 1;
 			else
-			{
 				++min[res];
-			}
+
 			++min[!res];
-			if (res == false)
+			if (res == false)		// resursa de tip A
 			{
 				stats[i][j].cost_minim_resursa = min[res];
 				stats[i][j].cost_compl = min[!res];
 			}
-			else
+			else					// resursa de tip B
 			{
 				stats[i][j].cost_minim_resursa = min[!res];
 				stats[i][j].cost_compl = min[res];
 			}
 		}
+
+		min[0] = stats[i][n - 1].cost_minim_resursa;
+		min[1] = stats[i][n - 1].cost_compl;
+		//minime pe linii de la dreapta la stanga
+		for (int j = n - 2; j >= 0; --j)
+		{
+			bool res = stats[i][j + 1].resursa;
+			int pret = stats[i][j + 1].pret_resursa;
+			if (min[res] > pret + 1)
+				min[res] = pret + 1;
+			else
+				++min[res];
+
+			++min[!res];
+			if (res == false)		// resursa de tip A
+			{
+				if (stats[i][j].cost_minim_resursa > min[res])
+					stats[i][j].cost_minim_resursa = min[res];
+				else
+					min[res] = stats[i][j].cost_minim_resursa;
+				if (stats[i][j].cost_compl > min[!res])
+					stats[i][j].cost_compl = min[!res];
+				else
+					min[!res] = stats[i][j].cost_compl;
+			}
+			else					// resursa de tip B
+			{
+				if (stats[i][j].cost_compl > min[res])
+					stats[i][j].cost_compl = min[res];
+				else
+					min[res] = stats[i][j].cost_compl;
+				if (stats[i][j].cost_minim_resursa > min[!res])
+					stats[i][j].cost_minim_resursa = min[!res];
+				else
+					min[!res] = stats[i][j].cost_minim_resursa;
+			}
+		}
 	}
-	cout << "After\n";
+	cout << "After lines left->Right + right->left\n";
 	printDebug(n, stats);
 }
 
