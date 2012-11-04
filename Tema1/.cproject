@@ -46,11 +46,11 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<fileInfo id="cdt.managedbuild.config.gnu.cross.exe.debug.991992502.1401601391" name="paralel.cpp" rcbsApplicability="disable" resourcePath="src/paralel.cpp" toolsToInvoke="cdt.managedbuild.tool.gnu.cross.cpp.compiler.463855666.693720146">
-						<tool id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.463855666.693720146" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler.463855666"/>
+					<fileInfo id="cdt.managedbuild.config.gnu.cross.exe.debug.991992502.960939348" name="serialoptimized.cpp" rcbsApplicability="disable" resourcePath="src/serialoptimized.cpp" toolsToInvoke="cdt.managedbuild.tool.gnu.cross.cpp.compiler.463855666.1076839919">
+						<tool id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.463855666.1076839919" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler.463855666"/>
 					</fileInfo>
 					<sourceEntries>
-						<entry excluding="src/paralel.cpp|src/serial.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src/serialoptimized.cpp|src/paralel.cpp|src/serial.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
