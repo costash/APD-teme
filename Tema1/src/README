@@ -1,0 +1,44 @@
+*** Tema 1 APD 2012 ***
+*** Coloniștii ***
+*** Șerban-Rădoi Constantin 333CA ***
+
+Fișiere sursă:
+	1) common.h		* aici se găsesc diferite funcții comune pentru toate
+			 variantele programelor
+	2) serial.cpp			* Implementarea serială, brută
+	3) paralel.cpp			* Implementarea paralelă, brută
+	4) serialoptimized.cpp	* Implementarea serială, optimizată
+	5) paraleloptimized.cpp	* Implementarea paralelă, optimizată
+	6) Makefile				* Fișier ce compilează sursele
+	7) *.sh					* Fișiere pentru rularea programelor
+
+Mod de utilizare al scripturilor:
+	Se pot apela sub forma:
+		./$(SCRIPT).sh $(ANI) $(FIS_IN) $(FIS_OUT) $(N_THREADS)
+	unde $(SCRIPT) este numele scriptului de rulat,
+	$(ANI) este numărul de ani pentru care se execută programul,
+	$(FIS_IN) fișierul de intrare, $(FIS_OUT) de ieșire,
+	$(N_THREADS) numărul de threaduri (poate fi omis)
+	ex: ./serial.sh 100 in100_1.txt out.txt
+
+*** Explicații algoritmi ***
+	Fiecare algoritm face citirea și scrierea datelor în/din fișiere în mod
+	similar, și nu necesită alte detalii
+Serial Neoptimizat:
+	Pentru fiecare an pentru care trebuie calculate informațiile, apelez funcția
+	computeNextYear(), care face toate operațiile necesare pentru un singur an. 
+	Aici aflu întâi minimele fiecărui colonist în parte, prin parcurgerea matricei
+	pentru fiecare celulă în parte. De unde complexitate O(n^4) pentru aflarea 
+	minimelor.
+	Updatarea bugetelor și prețurilor se face în O(n^2)
+
+	Deci complexitatea totală este O( T * N^4 ), unde T este numărul de ani, iar
+	N este numărul de coloniști de pe o latură a matricei.
+
+Paralel Neoptimizat:
+	Același algoritm ca cel serial neoptimizat, cu mențiunea că se paralelizează
+	calcularea minimelor, updatarea bugetelor și prețurilor, respectiv calcularea
+	valorilor agregate de la sfârșitul fiecărui an.
+	Pentru calculul paralel al valorilor agregate a fost nevoie să folosesc
+	*reduction*, care pentru "+" există deja implementat în OpenMP cu C++, iar
+	pentru funcția "max", a trebuit să-l reimplementez cu ajutorul unui flush, respectiv a unei zone critice 
