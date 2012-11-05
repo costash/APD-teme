@@ -34,6 +34,14 @@ Serial Neoptimizat:
 
 	Deci complexitatea totală este O( T * N^4 ), unde T este numărul de ani, iar
 	N este numărul de coloniști de pe o latură a matricei.
+	
+	Timpi rulare:
+	pentru ./serial 500 in50_1.txt out.txt
+		9.617s
+	pentru ./serial 50 in100_1.txt out.txt
+		14.438s
+	pentru ./serial 100 in100_1.txt out.txt
+		28.798s
 
 Paralel Neoptimizat:
 	Același algoritm ca cel serial neoptimizat, cu mențiunea că se paralelizează
@@ -41,4 +49,111 @@ Paralel Neoptimizat:
 	valorilor agregate de la sfârșitul fiecărui an.
 	Pentru calculul paralel al valorilor agregate a fost nevoie să folosesc
 	*reduction*, care pentru "+" există deja implementat în OpenMP cu C++, iar
-	pentru funcția "max", a trebuit să-l reimplementez cu ajutorul unui flush, respectiv a unei zone critice 
+	pentru funcția "max", a trebuit să-l reimplementez cu ajutorul unui flush, respectiv a unei zone critice.
+
+	Timpi rulare cu Scheduling dynamic:
+	pentru ./paralel 500 in50_1.txt out.txt
+		1 thread: 9.608s
+		2 threads: 5.110s
+		4 threads: 2.677s
+		8 threads: 1.527s
+	Speed-up:	9.608 / 1.527 = 6.29 la 8 threads
+				9.608 / 2.677 = 3.58 la 4 threads
+	Eficiența:	6.29 / 8 = 78%
+				3.58 / 4 = 89%
+	pentru ./paralel 50 in100_1.txt out.txt
+		1 thread : 14.436s
+		2 threads: 7.431s
+		4 threads: 3.775s
+		8 threads: 2.045s
+	Speed-up:	14.436 / 2.045 = 7.05 la 8 threads
+				14.436 / 3.775 = 3.82 la 4 threads
+	Eficiența:	7.05 / 8 = 88%
+				3.82 / 4 = 95%
+	pentru ./paralel 100 in100_1.txt out.txt
+		1 thread: 28.815s
+		2 threads: 14.730s
+		4 threads: 7.511s
+		8 threads: 3.967s
+	Speed-up:	28.798 / 3.967 = 7.25 la 8 threads
+				28.798 / 7.511 = 3.83 la 4 threads
+	Eficiența:	7.25 / 8 = 90%
+				3.83 / 4 = 96%
+
+Serial Optimizat:
+	Modificarea algoritmului constă în reducerea complexității aflării minimelor
+	de la O(n^4) la O(n^2). Am făcut acest lucru prin următorul algoritm:
+		** Am considerat întâi minimele pe fiecare linie, întâi de la stânga la
+	dreapta, apoi de la dreapta la stânga, updatând minimul meu în funcție de
+	minimul vecinului anterior (stânga sau dreapta, în funcție de parcurgere).
+		** Am salvat matricea obținută după aceste operații pentru a o putea
+	refolosi ulterior.
+		** Am considerat apoi minimele pe fiecare coloană, întâi de sus în jos,
+	apoi de jos în sus, updatând minimul meu în funcție de minimul vecinului
+	anterior (sus sau jos, în funcție de parcurgere).
+		** Aceste minime obținute după parcurgerea pe linii + coloane, le-am
+	comparat cu minimele obținute prin parcurgerea pe coloane, împreună cu valoarea
+	resursei produse de mine.
+		** Matricea rezultată astfel, conține în câmpurile cost_minim_resursa,
+	minimele pentru resursa de tip 0, iar în câmpul cost_compl, minimele pentru
+	resursa de tip 1.
+		** Astfel, la final am putut face aceiași pași ca și la algoritmul neoptimizat,
+	folosindu-mă de aflarea minimelor în O(n^2)
+
+	Deci, complexitatea devine acum O(T * (n^2 + n^2)) = O(T * n^2)
+	Complexitatea spațială mai adaugă O(n^2), de aceeși dimensiune cu matricea inițială
+	pentru o matrice auxiliară
+
+	Timpi de rulare:
+	pentru ./optims 5000 in50_1.txt out.txt
+		0.852s
+	pentru ./optims 1000 in50_1.txt out.txt
+		0.195s
+	pentru ./optims 2000 in100_1.txt out.txt
+		1.474s
+	pentru ./optims 1000 in100_1.txt out.txt
+		0.805s
+
+Paralel Optimizat:
+	Același algoritm ca și cel Serial Optimizat. Am paralelizat calcularea minimelor,
+	updatarea bugetelor și prețurilor, respectiv calcularea valorilor agregate de
+	la sfârșitul fiecărui an.
+	Am folosit același reduction ca și la varianta Paralel Neoptimizat
+
+	Timpi rulare cu Scheduling dynamic:
+	pentru ./optims 5000 in50_1.txt out.txt
+		1 thread: 1.017s
+		2 threads: 0.812s
+		4 threads: 0.576s
+		8 threads: 0.575s
+	Speed-up:	0.852 / 0.575 = 1.48 la 8 threads
+				0.852 / 0.576 = 1.47 la 4 threads
+	Eficiența:	1.48 / 8 = 18.5%
+				1.47 / 4 = 36.7%
+	pentru ./optims 1000 in50_1.txt out.txt
+		1 thread: 0.229s
+		2 threads: 0.186s
+		4 threads: 0.145s
+		8 threads: 0.125s
+	Speed-up:	0.195 / 0.125 = 1.56 la 8 threads
+				0.195 / 0.145 = 1.34 la 4 threads
+	Eficiența:	1.56 / 8 = 19.5%
+				1.34 / 4 = 33.5%
+	pentru ./optims 2000 in100_1.txt out.txt
+		1 thread: 1.747s
+		2 threads: 1.201s
+		4 threads: 0.799s
+		8 threads: 0.617s
+	Speed-up:	1.474 / 0.617 = 2.39 la 8 threads
+				1.474 / 0.799 = 1.84 la 4 threads
+	Eficiența:	2.39 / 8 = 29.8%
+				1.84 / 4 = 46%
+	pentru ./optims 1000 in100_1.txt out.txt
+		1 thread: 0.941s
+		2 threads: 0.683s
+		4 threads: 0.439s
+		8 threads: 0.303s
+	Speed-up:	0.805 / 0.303 = 2.65 la 8 threads
+				0.805 / 0.439 = 1.83 la 4 threads
+	Eficiența:	2.65 / 8 = 33.1%
+				1.83 / 4 = 45.8%
