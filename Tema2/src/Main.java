@@ -9,10 +9,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 
- */
-
-/**
  * @author Constantin Șerban-Rădoi 333CA
  * @category Main class containing main() function
  */
@@ -86,10 +82,31 @@ public class Main {
 
 		// Test code:
 		ArrayList<String> chunkWords = new ArrayList<String>();
-		boolean prevWordEnded = getNextChunk(indexedDocs.get(0), 1, chunkWords,
-				false);
-		System.err.println("\n\"" + chunkWords + "\"\nPrevWordEnded: "
-				+ prevWordEnded);
+		/*
+		 * boolean prevWordEnded = getNextChunk(indexedDocs.get(0), 4000,
+		 * chunkWords, false); System.err.println("\n\"" + chunkWords +
+		 * "\"\nPrevWordEnded: " + prevWordEnded);
+		 */
+		// Open file
+		RandomAccessFile file = null;
+		try {
+			file = new RandomAccessFile(indexedDocs.get(0), "r");
+		} catch (FileNotFoundException e1) {
+			e1.printStackTrace();
+		}
+		try {
+			boolean prevWordEnded = false;
+			for (int i = 0; i <= file.length() / fragmentSize; ++i) {
+				prevWordEnded = getNextChunk(indexedDocs.get(0), i
+						* fragmentSize, chunkWords, prevWordEnded);
+
+				System.err.println("\n" + chunkWords);
+				chunkWords.clear();
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -189,7 +206,7 @@ public class Main {
 	 */
 	static boolean getNextChunk(String fileName, long pos,
 			ArrayList<String> chunkWords, boolean previewsWordEnded) {
-		boolean thisWordEnded = false;
+		boolean lastWordEnded = false;
 
 		// Open file
 		RandomAccessFile file = null;
@@ -244,9 +261,10 @@ public class Main {
 						+ chunk.charAt(last) + "}");
 
 			StringBuilder sbw = new StringBuilder();
-			// S-a terminat cu altceva decat litera.
+			// Chunk ended with anything else than a letter, so last word is
+			// completed
 			if (last == chunkSize - 1)
-				thisWordEnded = true;
+				lastWordEnded = true;
 			else {
 				int idx = 0;
 				while (idx + last < chunkSize - 1) {
@@ -254,6 +272,7 @@ public class Main {
 					sbw.append(chunk.charAt(idx + last));
 				}
 
+				// Complete the last word
 				byte bt = 0;
 				while (idx + last + pos < fLength
 						&& Character.isLetter((char) (bt = file.readByte()))) {
@@ -262,20 +281,19 @@ public class Main {
 				}
 				System.err.println("Last word: {" + sbw.toString() + "}");
 
-				// chunkWords.add(sbw.toString());
-				thisWordEnded = false;
+				lastWordEnded = false;
 			}
 
 			tokenizeString(chunkWords, chunk, first, last);
 
-			if (thisWordEnded == false)
+			if (lastWordEnded == false)
 				chunkWords.add(sbw.toString());
 
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
-		return thisWordEnded;
+		return lastWordEnded;
 	}
 
 	/**
@@ -305,6 +323,18 @@ public class Main {
 			}
 
 			++first;
+		}
+	}
+
+	/**
+	 * Lowers the characters in strings
+	 * 
+	 * @param arr
+	 *            - The array of Strings to be modified
+	 */
+	static void lowerStringArray(ArrayList<String> arr) {
+		for (int i = 0; i < arr.size(); ++i) {
+			arr.set(i, arr.get(i).toLowerCase());
 		}
 	}
 }
