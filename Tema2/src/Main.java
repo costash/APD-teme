@@ -3,9 +3,14 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.TreeMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -32,6 +37,10 @@ public class Main {
 																			// documentelor
 																			// de
 																			// indexat
+	public static TreeMap<String,TreeMap<String,Long>> docsFragments = 
+			new TreeMap<String, TreeMap<String,Long>>();
+	
+	public static TreeMap<String, Long> wordCount = new TreeMap<String, Long>();
 
 	public static String inputFileName; // Input file name
 	public static String outputFileName; // Output file name
@@ -57,13 +66,72 @@ public class Main {
 		System.err.println("NumberOfMostRelevantXDocs:\t" + numDocumentsX);
 		System.err.println("Number of indexed docs:\t" + indexedDocsNum);
 		System.err.println("Indexed Docs:\n" + indexedDocs.toString());
-
+		
+		
 		// Create a thread pool
 		ExecutorService threadPool = Executors.newFixedThreadPool(NThreads);
-		for (int i = 0; i < NThreads; ++i) {
-			Runnable worker = new MapWorker();
-			threadPool.execute(worker);
-			System.err.println(i);
+		ArrayList<Future<SimpleEntry<String, TreeMap<String, Long>>>> futures =
+				new ArrayList<Future<SimpleEntry<String,TreeMap<String,Long>>>>();
+		
+		// Assign workers for Map operation
+		try {
+			for (String document : indexedDocs) {
+				// Open file
+				RandomAccessFile file = null;
+				try {
+					file = new RandomAccessFile(document, "r");
+				} catch (FileNotFoundException e1) {
+					e1.printStackTrace();
+				}
+				// Assign a worker for each fragment
+				for (int i = 0; i <= file.length() / fragmentSize; ++i) {
+					Callable<SimpleEntry<String, TreeMap<String, Long>>> worker = 
+							new MapWorker(document , i * fragmentSize);
+					Future<SimpleEntry<String, TreeMap<String, Long>>> submit = threadPool.submit(worker);
+					
+					futures.add(submit);
+				}
+				file.close();
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		// Get Futures (results)
+		for (Future<SimpleEntry<String, TreeMap<String, Long>>>future : futures) {
+			System.err.println("Future no: ");
+			try {
+				// TODO: Add Reduce for this work
+				/*if (!docsFragments.containsKey(future.get().getKey()))
+					docsFragments.put(future.get().getKey(), future.get().getValue());
+				else {
+					TreeMap<String, Long> tm = docsFragments.get(future.get().getKey());
+					//tm.putAll(future.get().getValue());
+					for (String w : future.get().getValue().keySet()) {
+						if (!tm.containsKey(w))
+							tm.put(w, future.get().getValue().get(w));
+						else {
+							Long oldVal = tm.get(w);
+							tm.put(w, oldVal + future.get().getValue().get(w));
+						}
+					}
+					docsFragments.put(future.get().getKey(), tm);
+				}*/
+				System.err.println("=============" + future.get().getKey() + "\n" + future.get().getValue().toString());
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (ExecutionException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		}
+		
+		// Number of words in each document
+		for (String doc : wordCount.keySet()) {
+			System.err.println("Nr cuvinte document \"" + doc + "\": " + wordCount.get(doc));
 		}
 
 		// Terminate all workers
@@ -79,34 +147,6 @@ public class Main {
 		}
 
 		System.err.println("Terminated all threads");
-
-		// Test code:
-		ArrayList<String> chunkWords = new ArrayList<String>();
-		/*
-		 * boolean prevWordEnded = getNextChunk(indexedDocs.get(0), 4000,
-		 * chunkWords, false); System.err.println("\n\"" + chunkWords +
-		 * "\"\nPrevWordEnded: " + prevWordEnded);
-		 */
-		// Open file
-		RandomAccessFile file = null;
-		try {
-			file = new RandomAccessFile(indexedDocs.get(0), "r");
-		} catch (FileNotFoundException e1) {
-			e1.printStackTrace();
-		}
-		try {
-			boolean prevWordEnded = false;
-			for (int i = 0; i <= file.length() / fragmentSize; ++i) {
-				prevWordEnded = getNextChunk(indexedDocs.get(0), i
-						* fragmentSize, chunkWords, prevWordEnded);
-
-				System.err.println("\n" + chunkWords);
-				chunkWords.clear();
-			}
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 	}
 
 	/**
@@ -115,7 +155,7 @@ public class Main {
 	 * @param args
 	 *            - Program command line arguments
 	 */
-	static void checkArgs(String[] args) {
+	private static void checkArgs(String[] args) {
 		if (args.length != 3) {
 			System.err
 					.println("Error! Must have exactly three parameters. Usage:\n\tNThreads input_file output_file\n");
@@ -132,7 +172,7 @@ public class Main {
 	 * @param inputFileName
 	 *            - Filename for reading input
 	 */
-	static void readInput(String inputFileName) {
+	private static void readInput(String inputFileName) {
 
 		try {
 			BufferedReader input = new BufferedReader(new FileReader(
@@ -192,147 +232,12 @@ public class Main {
 	}
 
 	/**
-	 * Gets a new array of words by reading a new chunk from file
-	 * 
-	 * @param fileName
-	 *            - The filename to read from
-	 * @param pos
-	 *            - The position in file where to start from
-	 * @param chunkWords
-	 *            - The array of words. Must not be null
-	 * @param previewsWordEnded
-	 *            - Whether the previews chunk ended with a space or not
-	 * @return True if the chunk's last word ended, False otherwise
-	 */
-	static boolean getNextChunk(String fileName, long pos,
-			ArrayList<String> chunkWords, boolean previewsWordEnded) {
-		boolean lastWordEnded = false;
-
-		// Open file
-		RandomAccessFile file = null;
-		try {
-			file = new RandomAccessFile(fileName, "r");
-		} catch (FileNotFoundException e1) {
-			e1.printStackTrace();
-		}
-
-		try {
-			// Seek to the next chunk position
-			file.seek(pos);
-
-			// Read fragmentSize bytes from current position in file
-			int chunkSize = fragmentSize;
-			long fLength = file.length();
-			System.err.println("File len " + fLength);
-			if (pos + chunkSize > fLength)
-				chunkSize = (int) (fLength - pos);
-
-			System.err.println("Chunk size: " + chunkSize);
-
-			// Try to read chunkSize bytes;
-			byte[] b = new byte[chunkSize];
-			file.read(b, 0, chunkSize);
-
-			String chunk = new String(b);
-			System.err.print("Chunk:\t>>" + chunk + "<<");
-
-			int first = 0;
-			boolean skipped = false;
-			// Skip the first word
-			while (!previewsWordEnded && first < chunkSize - 1
-					&& Character.isLetter(chunk.charAt(first))) {
-				++first;
-				skipped = true;
-			}
-			if (skipped)
-				++first; // I am at first non-white-space now
-
-			// Skip the last word
-			int last = (int) (chunkSize - 1);
-			while (last > 0 && Character.isLetter(chunk.charAt(last))) {
-				--last;
-			}
-
-			System.err.println("\nFirst non-space: " + first
-					+ " last non-space: " + last);
-			if (first < chunk.length())
-				System.err.println("chunk[" + first + "]= {"
-						+ chunk.charAt(first) + "} chunk[" + last + "]= {"
-						+ chunk.charAt(last) + "}");
-
-			StringBuilder sbw = new StringBuilder();
-			// Chunk ended with anything else than a letter, so last word is
-			// completed
-			if (last == chunkSize - 1)
-				lastWordEnded = true;
-			else {
-				int idx = 0;
-				while (idx + last < chunkSize - 1) {
-					idx++;
-					sbw.append(chunk.charAt(idx + last));
-				}
-
-				// Complete the last word
-				byte bt = 0;
-				while (idx + last + pos < fLength
-						&& Character.isLetter((char) (bt = file.readByte()))) {
-					sbw.append((char) (bt));
-					idx++;
-				}
-				System.err.println("Last word: {" + sbw.toString() + "}");
-
-				lastWordEnded = false;
-			}
-
-			tokenizeString(chunkWords, chunk, first, last);
-
-			if (lastWordEnded == false)
-				chunkWords.add(sbw.toString());
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		return lastWordEnded;
-	}
-
-	/**
-	 * Tokenizes a String into words
-	 * 
-	 * @param chunkWords
-	 *            - The Array where the words are saved
-	 * @param chunk
-	 *            - The chunk to be tokenized
-	 * @param first
-	 *            - Position in chunk for start
-	 * @param last
-	 *            - Position in chunk for end
-	 */
-	private static void tokenizeString(ArrayList<String> chunkWords,
-			String chunk, int first, int last) {
-		StringBuilder sb = new StringBuilder();
-		while (first <= last) {
-			char c = chunk.charAt(first);
-
-			int len;
-			if (Character.isLetter(c)) {
-				sb.append(c);
-			} else if ((len = sb.length()) > 0) {
-				chunkWords.add(sb.toString());
-				sb.delete(0, len);
-			}
-
-			++first;
-		}
-	}
-
-	/**
 	 * Lowers the characters in strings
 	 * 
 	 * @param arr
 	 *            - The array of Strings to be modified
 	 */
-	static void lowerStringArray(ArrayList<String> arr) {
+	public static void lowerStringArray(ArrayList<String> arr) {
 		for (int i = 0; i < arr.size(); ++i) {
 			arr.set(i, arr.get(i).toLowerCase());
 		}
