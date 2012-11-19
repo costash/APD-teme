@@ -136,7 +136,7 @@ public class Main {
 
 		// Terminate all workers
 		threadPool.shutdown();
-		System.err.println("Terminating tread pool");
+		System.err.println("Terminating thread pool");
 		try {
 			while (!threadPool.awaitTermination(1, TimeUnit.SECONDS)) {
 				System.err.println("Still terminating...");
@@ -147,6 +147,44 @@ public class Main {
 		}
 
 		System.err.println("Terminated all threads");
+		
+		// Create thread Pool for Reduce
+		ExecutorService threadPoolReduce = Executors.newFixedThreadPool(NThreads);
+		// Get Futures (results)
+		for (Future<SimpleEntry<String, TreeMap<String, Long>>>future : futures) {
+			System.err.println("Future no: ");
+			
+			try {
+				Runnable r = new ReduceSortWorker(future.get().getKey(), future.get().getValue());
+				
+				threadPoolReduce.execute(r);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (ExecutionException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			
+		}
+		
+		// Terminate all Reduce workers
+		threadPoolReduce.shutdown();
+		System.err.println("Terminating thread pool");
+		try {
+			while (!threadPoolReduce.awaitTermination(1, TimeUnit.SECONDS)) {
+				System.err.println("Still terminating...");
+			}
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		System.err.println("Terminated all threads");
+		
+		System.err.println("\n!!!!!FullMap:\n" + docsFragments.toString());
+		
 	}
 
 	/**
