@@ -201,7 +201,7 @@ public class MapWorker implements
 			tokenizeString(chunkWords, chunk, first, last);
 
 			if (lastWordEnded == false)
-				chunkWords.add(sbw.toString());
+				chunkWords.add(sbw.toString().toLowerCase());
 			
 			file.close();
 
@@ -234,7 +234,7 @@ public class MapWorker implements
 			if (Character.isLetter(c)) {
 				sb.append(c);
 			} else if ((len = sb.length()) > 0) {
-				chunkWords.add(sb.toString());
+				chunkWords.add(sb.toString().toLowerCase());
 				sb.delete(0, len);
 			}
 

@@ -6,7 +6,9 @@ import java.io.RandomAccessFile;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.TreeMap;
+import java.util.Vector;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
@@ -45,8 +47,13 @@ public class Main {
 	public static HashMap<String, Long> documentIndices =
 			new HashMap<String, Long>();	// Document indices in array
 	
-	public static ArrayList<ConcurrentLinkedQueue<TreeMap<String, Long>>> queues =
-			new ArrayList<ConcurrentLinkedQueue<TreeMap<String,Long>>>();	// Array of queues for reduce
+	//public static ArrayList<ConcurrentLinkedQueue<TreeMap<String, Long>>> queues =
+	//		new ArrayList<ConcurrentLinkedQueue<TreeMap<String,Long>>>();	// Array of queues for reduce
+	public static Vector<ConcurrentLinkedQueue<TreeMap<String, Long>>> queues =
+			new Vector<ConcurrentLinkedQueue<TreeMap<String,Long>>>();	// Array of queues for reduce
+	
+	public static ArrayList<ArrayList<Map.Entry<String, Long>>> sortedValues =
+			new ArrayList<ArrayList<Map.Entry<String, Long>>>();	// Sorted values for words in files
 	
 	public static TreeMap<String, Long> wordCount = new TreeMap<String, Long>();
 
@@ -191,14 +198,19 @@ public class Main {
 					chunk1 = tmpqueue.poll();
 					chunk2 = tmpqueue.poll();
 					
-					Runnable r = new ReduceSortWorker(indexedDocs.get(i), chunk1, chunk2);
+					//System.err.println("Queues\n" + queues);
+					/*String prost = "Prostule";
+					prost += queues.toString();
+					int lenfsdfd = prost.length();*/
+					
+					Runnable r = new ReduceAddWordsWorker(indexedDocs.get(i), chunk1, chunk2);
 					
 					threadPoolReduce.execute(r);
 				}
 			}
 		}
 		
-		// Terminate all Reduce workers
+		// Terminate all ReduceAddWords workers
 		threadPoolReduce.shutdown();
 		System.err.println("Terminating thread pool");
 		try {
@@ -209,13 +221,42 @@ public class Main {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
-		System.err.println("Terminated all threads");
+		System.err.println("Terminated all ReduceAddWords threads");
 		
-		//System.err.println("\n!!!!!FullMap:\n" + docsFragments.toString());
 		System.err.println("\n\nQueues\n");
 		for (int i = 0; i < indexedDocsNum; ++i)
 			System.err.println("queue[" + i + "] for doc " + indexedDocs.get(i) + " : " + queues.get(i));
+		
+		
+		// Initialize sortedValues
+		for (int i = 0; i < indexedDocsNum; ++i) {
+			sortedValues.add(new ArrayList<Map.Entry<String,Long>>());
+		}
+		
+		// Create thread pool for ReduceSortWorkers
+		threadPoolReduce = Executors.newFixedThreadPool(NThreads);
+		for (int i = 0; i < indexedDocsNum; ++i) {
+			Runnable r = new ReduceReverseSortWorker(i, queues.get(i).element());
+			
+			threadPoolReduce.execute(r);
+		}
+		
+		// Terminate all Reduce Sort workers
+		threadPoolReduce.shutdown();
+		System.err.println("Terminating thread pool");
+		try {
+			while (!threadPoolReduce.awaitTermination(1, TimeUnit.SECONDS)) {
+				System.err.println("Still terminating...");
+			}
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		// Debug print sorted arrays
+		for (int i = 0; i < indexedDocsNum; ++i) {
+			System.err.println("sorted for file " + indexedDocs.get(i) + " : " + sortedValues.get(i));
+		}
 		
 	}
 
