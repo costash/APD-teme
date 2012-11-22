@@ -5,8 +5,10 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -38,7 +40,13 @@ public class Main {
 																			// de
 																			// indexat
 	public static TreeMap<String,TreeMap<String,Long>> docsFragments = 
-			new TreeMap<String, TreeMap<String,Long>>();
+			new TreeMap<String, TreeMap<String,Long>>();	// Document fragments obtained from Map
+	
+	public static HashMap<String, Long> documentIndices =
+			new HashMap<String, Long>();	// Document indices in array
+	
+	public static ArrayList<ConcurrentLinkedQueue<TreeMap<String, Long>>> queues =
+			new ArrayList<ConcurrentLinkedQueue<TreeMap<String,Long>>>();	// Array of queues for reduce
 	
 	public static TreeMap<String, Long> wordCount = new TreeMap<String, Long>();
 
@@ -73,6 +81,7 @@ public class Main {
 		ArrayList<Future<SimpleEntry<String, TreeMap<String, Long>>>> futures =
 				new ArrayList<Future<SimpleEntry<String,TreeMap<String,Long>>>>();
 		
+		
 		// Assign workers for Map operation
 		try {
 			for (String document : indexedDocs) {
@@ -98,41 +107,7 @@ public class Main {
 			e.printStackTrace();
 		}
 		
-		// Get Futures (results)
-		for (Future<SimpleEntry<String, TreeMap<String, Long>>>future : futures) {
-			System.err.println("Future no: ");
-			try {
-				// TODO: Add Reduce for this work
-				/*if (!docsFragments.containsKey(future.get().getKey()))
-					docsFragments.put(future.get().getKey(), future.get().getValue());
-				else {
-					TreeMap<String, Long> tm = docsFragments.get(future.get().getKey());
-					//tm.putAll(future.get().getValue());
-					for (String w : future.get().getValue().keySet()) {
-						if (!tm.containsKey(w))
-							tm.put(w, future.get().getValue().get(w));
-						else {
-							Long oldVal = tm.get(w);
-							tm.put(w, oldVal + future.get().getValue().get(w));
-						}
-					}
-					docsFragments.put(future.get().getKey(), tm);
-				}*/
-				System.err.println("=============" + future.get().getKey() + "\n" + future.get().getValue().toString());
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (ExecutionException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			
-		}
 		
-		// Number of words in each document
-		for (String doc : wordCount.keySet()) {
-			System.err.println("Nr cuvinte document \"" + doc + "\": " + wordCount.get(doc));
-		}
 
 		// Terminate all workers
 		threadPool.shutdown();
@@ -146,15 +121,25 @@ public class Main {
 			e.printStackTrace();
 		}
 
-		System.err.println("Terminated all threads");
+		System.err.println("Terminated all Map threads");
+		// Number of words in each document
+		for (String doc : wordCount.keySet()) {
+			System.err.println("Nr cuvinte document \"" + doc + "\": " + wordCount.get(doc));
+		}
 		
-		// Create thread Pool for Reduce
-		ExecutorService threadPoolReduce = Executors.newFixedThreadPool(NThreads);
+		// Map the filenames with indices
+		for (int i = 0; i < indexedDocsNum; ++i)
+			documentIndices.put(indexedDocs.get(i), (long) i);
+		
+		for (int i = 0; i < indexedDocsNum; ++i)
+			queues.add(new ConcurrentLinkedQueue<TreeMap<String,Long>>());
+		
+		
 		// Get Futures (results)
 		for (Future<SimpleEntry<String, TreeMap<String, Long>>>future : futures) {
-			System.err.println("Future no: ");
+			//System.err.println("Future no: ");
 			
-			try {
+			/*try {
 				Runnable r = new ReduceSortWorker(future.get().getKey(), future.get().getValue());
 				
 				threadPoolReduce.execute(r);
@@ -164,9 +149,53 @@ public class Main {
 			} catch (ExecutionException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
+			}*/
+			
+			try {
+				String docName = future.get().getKey();
+				
+				TreeMap<String, Long> chunk = future.get().getValue();
+				int index = documentIndices.get(docName).intValue();
+				ConcurrentLinkedQueue<TreeMap<String, Long>> tmpqueue = queues.get(index);
+				tmpqueue.add(chunk);
+				
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (ExecutionException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 			
 			
+		}
+		
+		System.err.println("\n\nQueues\n");
+		for (int i = 0; i < indexedDocsNum; ++i)
+			System.err.println("queue[" + i + "] for doc " + indexedDocs.get(i) + " : " + queues.get(i));
+		
+		// Create thread Pool for Reduce
+		ExecutorService threadPoolReduce = Executors.newFixedThreadPool(NThreads);
+		
+		
+		// TODO reduce code here
+		
+		boolean enterLoop = true;
+		while (enterLoop) {
+			enterLoop = false;
+			for (int i = 0; i < indexedDocsNum; ++i) {
+				ConcurrentLinkedQueue<TreeMap<String, Long>> tmpqueue = queues.get(i);
+				if (tmpqueue.size() >= 2) {
+					enterLoop = true;
+					TreeMap<String, Long> chunk1, chunk2;
+					chunk1 = tmpqueue.poll();
+					chunk2 = tmpqueue.poll();
+					
+					Runnable r = new ReduceSortWorker(indexedDocs.get(i), chunk1, chunk2);
+					
+					threadPoolReduce.execute(r);
+				}
+			}
 		}
 		
 		// Terminate all Reduce workers
@@ -183,7 +212,10 @@ public class Main {
 
 		System.err.println("Terminated all threads");
 		
-		System.err.println("\n!!!!!FullMap:\n" + docsFragments.toString());
+		//System.err.println("\n!!!!!FullMap:\n" + docsFragments.toString());
+		System.err.println("\n\nQueues\n");
+		for (int i = 0; i < indexedDocsNum; ++i)
+			System.err.println("queue[" + i + "] for doc " + indexedDocs.get(i) + " : " + queues.get(i));
 		
 	}
 
