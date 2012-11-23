@@ -1,0 +1,45 @@
+*** Tema 2 APD 2012 ***
+*** Indexare documente folosind Map-Reduce ***
+*** Șerban-Rădoi Constantin 333CA ***
+
+Fișiere sursă:
+	1) Main.java					* Clasa ce conține programul principal
+	2) MapWorker.java				* Clasa pentru task-urile de tip Map
+	3) ReduceAddWordsWorker.java	* Clasa pentru workeri de tip Reduce
+			care fac reuniune dintre rezultatele obținute de task-urile Map
+	4) ReduceReverseSortWorker.java	* Clasa pentru workeri de tip Reduce
+			care sortează vectorii descrescător și calculează rezultatul final
+	5) Readme						* Acest fișier
+
+Cerințe temă:
+	Indexarea unui număr de documente și întoarcerea unui rezultat în funcție
+	de cuvintele cheie căutate
+
+*** Explicații algoritmice ***
+	* Inițial citesc serial datele din fișierul dat ca argument, în main.
+	* Apoi, pentru fiecare fișier ce trebuie indexat, citesc dimensiunea sa,
+		pentru a afla în câte chunk-uri va fi "spart" și creez exact atâtea
+		task-uri de tip Map, pe care le pun într-un thread pool.
+	* Fiecare task de tip Map primește ca input locația din fișier de unde să
+		înceapă citirea, și numele acestuia. El citește chunk-ul respectiv și
+		împarte în cuvinte respectând cerința.
+	* Task-urile de tip Map întorc ca rezultat un HashMap ce conține perechi
+		cheie-valoare, anume cuvânt-apariții
+	* Când s-au terminat toate task-urile de tip Map, închid thread pool-ul de
+		la Map, și iau rezultatele lor (din lista de Futures) și le adaug în
+		cozi, ce corespund fiecărui fișier parsat.
+	* Creez un alt thread pool pentru task-uri de tip Reduce, și încep să
+		parcurg cozile cu rezultatele obținute anterior, extrăgând primele
+		două elemente din fiecare coadă, și trimițându-le la un task Reduce,
+		care va face reuniunea dintre cele două elemente.
+	* Workerii nou-creați vor depunde rezultatul lor înapoi în coada de unde au
+		fost extrase cele două elemente
+	* Acest proces se execută cât timp mai există ceva de procesat în fiecare
+		din cozi
+	
+	* După terminarea reuniunii, începe a 2-a fază a operației Reduce, prin care
+		sortez fiecare array de perechi (cuvânt, număr_apariții) în funcție de
+		numărul de apariții și păstrez doar primele N cuvinte ce sunt indexate
+	* Tot în această etapă calculez și frecvențele cuvintelor, pe care le salvez
+		pentru a le afișa la final
+	* La sfârșitul acestor task-uri, afișez rezultatul final în fișier.

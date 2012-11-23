@@ -55,10 +55,7 @@ public class Main {
 																						// in
 																						// array
 
-	// public static ArrayList<ConcurrentLinkedQueue<TreeMap<String, Long>>>
-	// queues =
-	// new ArrayList<ConcurrentLinkedQueue<TreeMap<String,Long>>>(); // Array of
-	// queues for reduce
+
 	public static Vector<ConcurrentLinkedQueue<TreeMap<String, Long>>> queues = new Vector<ConcurrentLinkedQueue<TreeMap<String, Long>>>(); // Array
 																																			// of
 																																			// queues
