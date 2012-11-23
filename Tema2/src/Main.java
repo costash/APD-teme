@@ -1,6 +1,8 @@
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.AbstractMap.SimpleEntry;
@@ -54,6 +56,8 @@ public class Main {
 			new Vector<ConcurrentLinkedQueue<TreeMap<String,Long>>>();	// Array of queues for reduce
 	
 	public static Vector<AtomicInteger> queuesLock = new Vector<AtomicInteger>();	// Lock for reduce loop
+	
+	public static Vector<String> searchResults = new Vector<String>(); // Search results as Strings
 	
 	public static ArrayList<ArrayList<Map.Entry<String, Long>>> sortedValues =
 			new ArrayList<ArrayList<Map.Entry<String, Long>>>();	// Sorted values for words in files
@@ -247,6 +251,9 @@ public class Main {
 			sortedValues.add(new ArrayList<Map.Entry<String,Long>>());
 		}
 		
+		for (int i = 0; i < indexedDocsNum; ++i)
+			searchResults.add(new String(""));
+		
 		// Create thread pool for ReduceSortWorkers
 		threadPoolReduce = Executors.newFixedThreadPool(NThreads);
 		for (int i = 0; i < indexedDocsNum; ++i) {
@@ -272,6 +279,45 @@ public class Main {
 			System.err.println("sorted for file " + indexedDocs.get(i) + " : " + sortedValues.get(i));
 		}
 		
+		StringBuilder sb = new StringBuilder("(");
+		for (int i = 0; i < nrCuvCheie; ++i) {
+			if (i != nrCuvCheie - 1) {
+				sb.append(cuvCheie.get(i) + ", ");
+			}
+			else {
+				sb.append(cuvCheie.get(i) + ")");
+			}
+		}
+		String keyWords = sb.toString();
+		
+		sb = new StringBuilder("Rezultate pentru: " + keyWords + "\n\n");
+		// Print results
+		System.err.println("Rezultate pentru: " + sb.toString() + "\n");
+		for (int i = 0; i < indexedDocsNum; ++i) {
+			if (searchResults.get(i).compareTo("") != 0) {
+				System.err.println(searchResults.get(i));
+				sb.append(searchResults.get(i) + "\n");
+			}
+		}
+		
+		System.err.println("FINAL\n" + sb.toString());
+		
+		writeOutput(sb);
+		
+	}
+
+	/**
+	 * @param sb
+	 */
+	private static void writeOutput(StringBuilder sb) {
+		try {
+			BufferedWriter writer = new BufferedWriter(new FileWriter(outputFileName));
+			writer.write(sb.toString());
+			writer.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	/**

@@ -1,3 +1,5 @@
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -51,6 +53,44 @@ public class ReduceReverseSortWorker implements Runnable {
 		}
 		for (int i = size - 1; i >= idx + 1; --i) {
 			tmpArr.remove(i);
+		}
+		
+		boolean keyWordMissing = false;
+		for (int i = 0; i < Main.nrCuvCheie; ++i) {
+			boolean keyWordFound = false;
+			for (int j = 0; j < tmpArr.size(); ++j)
+				if ( tmpArr.get(j).getKey().compareTo(Main.cuvCheie.get(i)) == 0)
+					keyWordFound = true;
+			if (keyWordFound == false) {
+				keyWordMissing = true;
+				break;
+			}
+		}
+		
+		// All keywords have been found for this document
+		if (keyWordMissing == false) {
+			StringBuilder sb = new StringBuilder(Main.indexedDocs.get(queueIndex) + " (");
+			for (int i = 0; i < Main.nrCuvCheie; ++i) {
+				int totalWords = Main.wordCount.get(Main.indexedDocs.get(queueIndex)).intValue();
+				float frequency = ( (float)documentWordsMap.get(Main.cuvCheie.get(i))/ (float)totalWords ) * 100;
+				
+				System.err.println("Frecv pt " + Main.cuvCheie.get(i) + " in doc " + 
+						Main.indexedDocs.get(queueIndex) + ": " + frequency + "total nr" + totalWords);
+				
+				DecimalFormat df = new DecimalFormat("0.00");
+				df.setRoundingMode(RoundingMode.FLOOR);
+				System.err.println(df.format(frequency));
+				
+				if (i != Main.nrCuvCheie - 1) {
+					sb.append(df.format(frequency) + ", ");
+				}
+				else {
+					sb.append(df.format(frequency) + ")");
+				}
+				System.err.println(sb.toString());
+				
+				Main.searchResults.set(queueIndex, sb.toString());
+			}
 		}
 		
 		Main.sortedValues.set(queueIndex, tmpArr);
