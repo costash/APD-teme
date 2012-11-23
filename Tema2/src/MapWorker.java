@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 
-
 /**
  * @author Constantin Serban-Radoi 333CA
  * 
@@ -17,41 +16,43 @@ public class MapWorker implements
 		Callable<SimpleEntry<String, TreeMap<String, Long>>> {
 	private String docName = new String();
 	private int startPos = 0;
-	
+
 	private TreeMap<String, Long> treeMap = new TreeMap<String, Long>();
 	private SimpleEntry<String, TreeMap<String, Long>> kvp;
 
-
 	MapWorker(String docName, int startPos) {
 		this.docName = docName;
-		this.kvp = new SimpleEntry<String, TreeMap<String, Long>>(docName, treeMap);
+		this.kvp = new SimpleEntry<String, TreeMap<String, Long>>(docName,
+				treeMap);
 		this.startPos = startPos;
 	}
 
 	@Override
 	public SimpleEntry<String, TreeMap<String, Long>> call() throws Exception {
-		System.err.println("Working. Worker no "
-				+ Thread.currentThread().getId());
+		if (Main.DEBUG)
+			System.err.println("Working. Worker no "
+					+ Thread.currentThread().getId());
 
 		// Get the Array of words for current chunk
 		boolean previewsEnded = previewsWordEnded(docName, startPos);
 		ArrayList<String> chunkWords = new ArrayList<String>();
 		getNextChunk(docName, startPos, chunkWords, previewsEnded);
-		
-		System.err.println("\n\nWords of " + Thread.currentThread().getName() + 
-				"\tstarting at " + startPos + "\n" + chunkWords.toString());
+
+		if (Main.DEBUG)
+			System.err.println("\n\nWords of "
+					+ Thread.currentThread().getName() + "\tstarting at "
+					+ startPos + "\n" + chunkWords.toString());
 
 		// Shared between threads: Number of words in a document
 		synchronized (Main.wordCount) {
 			long sz = (long) chunkWords.size();
 			if (!Main.wordCount.containsKey(docName)) {
 				Main.wordCount.put(docName, sz);
-			}
-			else {
+			} else {
 				Main.wordCount.put(docName, Main.wordCount.get(docName) + sz);
 			}
 		}
-		
+
 		// Add words to map
 		for (String word : chunkWords) {
 			if (!treeMap.containsKey(word))
@@ -59,8 +60,10 @@ public class MapWorker implements
 			else
 				treeMap.put(word, treeMap.get(word) + 1);
 		}
-		System.err.println("Corresponding map for " + Thread.currentThread().getName() + 
-				"\nstarting at " + startPos + "\n" + treeMap.toString() + "\n\n");
+		if (Main.DEBUG)
+			System.err.println("Corresponding map for "
+					+ Thread.currentThread().getName() + "\nstarting at "
+					+ startPos + "\n" + treeMap.toString() + "\n\n");
 		kvp.setValue(treeMap);
 		return kvp;
 	}
@@ -96,7 +99,7 @@ public class MapWorker implements
 				lastWordEnded = false;
 			} else
 				lastWordEnded = true;
-			
+
 			file.close();
 
 		} catch (IOException e) {
@@ -104,7 +107,7 @@ public class MapWorker implements
 		}
 		return lastWordEnded;
 	}
-	
+
 	/**
 	 * Gets a new array of words by reading a new chunk from file
 	 * 
@@ -137,18 +140,21 @@ public class MapWorker implements
 			// Read fragmentSize bytes from current position in file
 			int chunkSize = Main.fragmentSize;
 			long fLength = file.length();
-			System.err.println("File len " + fLength);
+			if (Main.DEBUG)
+				System.err.println("File len " + fLength);
 			if (pos + chunkSize > fLength)
 				chunkSize = (int) (fLength - pos);
 
-			System.err.println("Chunk size: " + chunkSize);
+			if (Main.DEBUG)
+				System.err.println("Chunk size: " + chunkSize);
 
 			// Try to read chunkSize bytes;
 			byte[] b = new byte[chunkSize];
 			file.read(b, 0, chunkSize);
 
 			String chunk = new String(b);
-			System.err.print("Chunk:\t>>" + chunk + "<<");
+			if (Main.DEBUG)
+				System.err.print("Chunk:\t>>" + chunk + "<<");
 
 			int first = 0;
 			boolean skipped = false;
@@ -166,13 +172,14 @@ public class MapWorker implements
 			while (last > 0 && Character.isLetter(chunk.charAt(last))) {
 				--last;
 			}
-
-			System.err.println("\nFirst non-space: " + first
-					+ " last non-space: " + last);
+			if (Main.DEBUG)
+				System.err.println("\nFirst non-space: " + first
+						+ " last non-space: " + last);
 			if (first < chunk.length())
-				System.err.println("chunk[" + first + "]= {"
-						+ chunk.charAt(first) + "} chunk[" + last + "]= {"
-						+ chunk.charAt(last) + "}");
+				if (Main.DEBUG)
+					System.err.println("chunk[" + first + "]= {"
+							+ chunk.charAt(first) + "} chunk[" + last + "]= {"
+							+ chunk.charAt(last) + "}");
 
 			StringBuilder sbw = new StringBuilder();
 			// Chunk ended with anything else than a letter, so last word is
@@ -193,7 +200,8 @@ public class MapWorker implements
 					sbw.append((char) (bt));
 					idx++;
 				}
-				System.err.println("Last word: {" + sbw.toString() + "}");
+				if (Main.DEBUG)
+					System.err.println("Last word: {" + sbw.toString() + "}");
 
 				lastWordEnded = false;
 			}
@@ -202,7 +210,7 @@ public class MapWorker implements
 
 			if (lastWordEnded == false)
 				chunkWords.add(sbw.toString().toLowerCase());
-			
+
 			file.close();
 
 		} catch (IOException e) {
@@ -211,7 +219,7 @@ public class MapWorker implements
 
 		return lastWordEnded;
 	}
-	
+
 	/**
 	 * Tokenizes a String into words
 	 * 
