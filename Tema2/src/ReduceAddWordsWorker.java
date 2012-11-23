@@ -1,5 +1,6 @@
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Constantin Serban-Radoi 333CA
@@ -44,6 +45,10 @@ public class ReduceAddWordsWorker implements Runnable {
 		int index = Main.documentIndices.get(docName).intValue();
 		ConcurrentLinkedQueue<TreeMap<String, Long>> tmpqueue = Main.queues.get(index);
 		tmpqueue.add(tmpMap);
+		
+		// Decrement lock for queue
+		AtomicInteger lock = Main.queuesLock.get(index);
+		lock.decrementAndGet();
 	}
 
 }

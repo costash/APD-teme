@@ -16,6 +16,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Constantin Șerban-Rădoi 333CA
@@ -51,6 +52,8 @@ public class Main {
 	//		new ArrayList<ConcurrentLinkedQueue<TreeMap<String,Long>>>();	// Array of queues for reduce
 	public static Vector<ConcurrentLinkedQueue<TreeMap<String, Long>>> queues =
 			new Vector<ConcurrentLinkedQueue<TreeMap<String,Long>>>();	// Array of queues for reduce
+	
+	public static Vector<AtomicInteger> queuesLock = new Vector<AtomicInteger>();	// Lock for reduce loop
 	
 	public static ArrayList<ArrayList<Map.Entry<String, Long>>> sortedValues =
 			new ArrayList<ArrayList<Map.Entry<String, Long>>>();	// Sorted values for words in files
@@ -139,6 +142,9 @@ public class Main {
 			documentIndices.put(indexedDocs.get(i), (long) i);
 		
 		for (int i = 0; i < indexedDocsNum; ++i)
+			queuesLock.add(new AtomicInteger());
+		
+		for (int i = 0; i < indexedDocsNum; ++i)
 			queues.add(new ConcurrentLinkedQueue<TreeMap<String,Long>>());
 		
 		
@@ -192,6 +198,12 @@ public class Main {
 			enterLoop = false;
 			for (int i = 0; i < indexedDocsNum; ++i) {
 				ConcurrentLinkedQueue<TreeMap<String, Long>> tmpqueue = queues.get(i);
+				
+				AtomicInteger lock = queuesLock.get(i);
+				if (lock.get() > 0) {
+					enterLoop = true;
+				}
+				
 				if (tmpqueue.size() >= 2) {
 					enterLoop = true;
 					TreeMap<String, Long> chunk1, chunk2;
@@ -203,6 +215,8 @@ public class Main {
 					prost += queues.toString();
 					int lenfsdfd = prost.length();*/
 					
+					// Increment lock on queue
+					lock.incrementAndGet();
 					Runnable r = new ReduceAddWordsWorker(indexedDocs.get(i), chunk1, chunk2);
 					
 					threadPoolReduce.execute(r);
