@@ -55,7 +55,6 @@ public class Main {
 																						// in
 																						// array
 
-
 	public static Vector<ConcurrentLinkedQueue<TreeMap<String, Long>>> queues = new Vector<ConcurrentLinkedQueue<TreeMap<String, Long>>>(); // Array
 																																			// of
 																																			// queues
@@ -376,8 +375,11 @@ public class Main {
 			// Print results
 			System.err.println("Rezultate pentru: " + sb.toString() + "\n");
 		}
-		for (int i = 0; i < indexedDocsNum; ++i) {
+
+		for (int i = 0, counter = 0; i < indexedDocsNum
+				&& counter < numDocumentsX; ++i) {
 			if (searchResults.get(i).compareTo("") != 0) {
+				++counter;
 				if (DEBUG)
 					System.err.println(searchResults.get(i));
 				sb.append(searchResults.get(i) + "\n");
