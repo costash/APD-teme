@@ -76,8 +76,8 @@ void printMatrix(unsigned char *m, uint width, uint height)
 }
 
 // Mandelbrot
-void mandelbrot(unsigned char *img, unsigned int width, double step,
-		double max_steps, Complex cmin, Complex cmax)
+void generateImage(unsigned char *img, unsigned int width, double step,
+		double max_steps, Complex cmin, Complex cmax, bool type, Complex julia)
 {
 	uint i = 0;
 	uint j = 0;
@@ -87,13 +87,19 @@ void mandelbrot(unsigned char *img, unsigned int width, double step,
 		for (double cim = cmin.im; cim < cmax.im; cim += step, ++j)
 		{
 			Complex z;
+			if (type == 1)	// Julia
+				z = Complex(cre, cim);
 			uint step = 0;
 			while (z.squareModule() < 4 && step < max_steps)
 			{
-				z = z * z + Complex(cre, cim);
+				if (type == 0) // Mandelbrot
+					z = z * z + Complex(cre, cim);
+				else
+					// Julia
+					z = z * z + julia;
 				++step;
 			}
-			img[i * width + j] = step % NUM_COLORS;
+			img[j * width + i] = step % NUM_COLORS;
 
 		}
 	}
@@ -114,7 +120,7 @@ void writeImage(const char* filename, unsigned char *img, unsigned int width,
 		{
 			for (uint j = 0; j < width; ++j)
 				//for (int j = width - 1; j >= 0; --j)
-				fout << (uint) img[(int) j * width + i] << " ";
+				fout << (uint) img[(int) i * width + j] << " ";
 			fout << "\n";
 		}
 	}
@@ -161,9 +167,10 @@ int main(int argc, char *argv[])
 
 		//cerr << "Before\n";
 		//printMatrix(m, width, height);
-		mandelbrot(m, width, input.step, input.max_stepts,
+		generateImage(m, width, input.step, input.max_stepts,
 				Complex(input.x_min, input.y_min),
-				Complex(input.x_max, input.y_max));
+				Complex(input.x_max, input.y_max), input.type,
+				Complex(input.x_julia, input.y_julia));
 		//cerr << "After\n";
 		//printMatrix(m, width, height);
 
