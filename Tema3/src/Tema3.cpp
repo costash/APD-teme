@@ -220,7 +220,7 @@ int main(int argc, char *argv[])
 			if (i != rank)
 			{
 				MPI_Status status;
-				unsigned char buff[(chunkHeight + 1) * (width + 1)];
+				unsigned char *buff = new unsigned char[(chunkHeight + 1) * (width + 1)];
 				memset(buff, 0, sizeof(buff));
 
 				MPI_Recv(buff, (chunkHeight + 1) * (width + 1), MPI::UNSIGNED_CHAR, MPI::ANY_SOURCE, 1, MPI::COMM_WORLD, &status);
@@ -236,6 +236,7 @@ int main(int argc, char *argv[])
 				}
 				//printMatrix(m, width, height);
 
+				delete[] buff;
 			}
 
 		Complex myMin(input.x_min, input.y_min);
