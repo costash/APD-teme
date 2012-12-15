@@ -226,6 +226,7 @@ int main(int argc, char *argv[])
 				MPI_Recv(buff, (chunkHeight + 1) * (width + 1), MPI::UNSIGNED_CHAR, MPI::ANY_SOURCE, 1, MPI::COMM_WORLD, &status);
 				if (status.MPI_SOURCE == size - 1)
 					adjustedHeight = height - (size - 1) * chunkHeight;
+				else adjustedHeight = chunkHeight;
 
 				//printMatrix(buff, width, chunkHeight);
 
